@@ -1,4 +1,4 @@
-module Klank.IASM.Ti where
+module Klank.IASM.Tal where
 
 import Prelude
 import Control.Promise (toAffE)
@@ -17,13 +17,15 @@ import Data.Typelevel.Num (D1, D2)
 import FRP.Behavior (Behavior)
 import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpassT_, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
 import Foreign.Object as O
-import Math (cos, pi, sin)
+import Math (pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
 
 sounds =
-  [ Tuple 84 8.447006802721088
-  , Tuple 83 12.203718820861678
-  , Tuple 82 11.849886621315193
+  [ Tuple 43 6.315827664399093
+  , Tuple 42 6.362267573696145
+  , Tuple 32 2.2058956916099772
+  , Tuple 31 2.9024943310657596
+  , Tuple 24 7.604535147392291
   ] ::
     Array (Tuple Int Number)
 
@@ -57,6 +59,8 @@ epwf p s =
 fromCloud :: String -> String
 fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
 
+-- https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/Tal/G5/43.l.ogg
+-- https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/Tal/G5/43.l.ogg
 main :: Klank
 main =
   klank
@@ -69,8 +73,8 @@ main =
                       s = show $ fst i
                     in
                       Tuple
-                        ("Ti-D5-" <> s <> "-l")
-                        ("Ti/D5/" <> s <> ".l.ogg")
+                        ("Tal-G5-" <> s <> "-l")
+                        ("Tal/G5/" <> s <> ".l.ogg")
                 )
                 sounds
             )
@@ -84,8 +88,9 @@ fromSounds i = fromMaybe 0.0 (M.lookup i soundsMap)
 soundsMap :: M.Map Int Number
 soundsMap = M.fromFoldable sounds
 
-type PlayerTiOpts
+type PlayerTalOpts
   = { tag :: String
+    , offset :: Number
     , pan :: Number -> Number
     , gain :: Number -> AudioParameter Number
     , hpff :: Number -> AudioParameter Number
@@ -95,8 +100,8 @@ type PlayerTiOpts
 atT :: forall a. Number -> (Number -> a) -> (Number -> a)
 atT t = lcmap (_ - t)
 
-playerTi :: Int -> (Number -> PlayerTiOpts) -> Number -> List (AudioUnit D2)
-playerTi name' opts' time =
+playerTal :: Int -> (Number -> PlayerTalOpts) -> Number -> List (AudioUnit D2)
+playerTal name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMono_ (opts.tag <> "_pan") (opts.pan time)
@@ -105,49 +110,49 @@ playerTi name' opts' time =
               ( highpassT_ (opts.tag <> "_hpf")
                   (opts.hpff time)
                   (opts.hpfq time)
-                  (playBufWithOffset_ (opts.tag <> "_playerTi") name 1.0 0.0)
+                  (playBufWithOffset_ (opts.tag <> "_playerTal") name 1.0 opts.offset)
               )
           )
   else
     Nil
   where
-  len = (fromSounds name')
+  len = fromSounds name'
 
   opts = opts' len
 
-  name = "Ti-D5-" <> show name' <> "-l"
+  name = "Tal-G5-" <> show name' <> "-l"
 
-playerTi_ :: Int -> (Number -> PlayerTiOpts) -> Number -> Behavior (AudioUnit D2)
-playerTi_ name opts time = pure $ speaker (zero :| playerTi name opts time)
+data TalInfo
+  = TalInfo Int Number Number
 
-data TiInfo
-  = TiInfo Int (Number -> Number)
+playerTal_ :: Int -> (Number -> PlayerTalOpts) -> Number -> Behavior (AudioUnit D2)
+playerTal_ name opts time = pure $ speaker (zero :| playerTal name opts time)
 
-fast = 0.17 :: Number
+peak :: Number → Array (Tuple Number Number)
+peak n = [ Tuple n 0.2, Tuple (n + 0.05) 1.0, Tuple (n + 0.1) 1.0, Tuple (n + 0.15) 0.2 ]
 
-tiDots :: Number -> String -> Array (Number → List (AudioUnit D2))
-tiDots os tg =
+talPlayer2 :: Number -> String -> Array (Number → List (AudioUnit D2))
+talPlayer2 os tg =
   map
-    ( \(TiInfo x pf) ->
-        ( atT os
-            $ playerTi x
-                ( \l ->
-                    { tag: tg <> "ti" <> (show x)
-                    , pan: pf
-                    , gain:
-                        epwf
-                          [ Tuple 0.0 1.0
-                          , Tuple l 1.0
-                          ]
-                    , hpff: epwf [ Tuple 0.0 1800.0, Tuple l 400.0 ]
-                    , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
-                    }
+    ( \(TalInfo x y o) ->
+        ( atT (y + os)
+            $ playerTal x
+                ( \l' ->
+                    let
+                      l = min l' 2.0
+                    in
+                      { tag: tg <> "mp1" <> (show x) <> (show y)
+                      , pan: \t -> 0.5 * sin (0.3 * pi * t)
+                      , offset: o
+                      , gain: epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9, 2.7 ])
+                      , hpff: epwf [ Tuple 0.0 10.0, Tuple l 10.0 ]
+                      , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
+                      }
                 )
         )
     )
-    [ TiInfo 82 (\t -> sin (t * pi))
-    , TiInfo 83 (\t -> cos (t * pi))
-    , TiInfo 84 (\t -> -1.0 * cos (t * pi))
+    [ TalInfo 43 0.0 0.0
+    , TalInfo 42 3.0 0.0
     ]
 
 scene :: Number -> Behavior (AudioUnit D2)
@@ -157,7 +162,7 @@ scene time =
         ( zero
             :| fold
                 ( map ((#) time)
-                    ( (tiDots 1.0 "Ti1") <> (tiDots 10.0 "Ti2")
+                    ( (talPlayer2 1.0 "Tal2")
                     )
                 )
         )

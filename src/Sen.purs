@@ -19,7 +19,6 @@ import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, decodeAudioDataFromUri
 import Foreign.Object as O
 import Math (pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
-import Web.HTML.HTMLMediaElement.CanPlayType (CanPlayType(..))
 
 sounds =
   [ Tuple 105 1.3107256235827665
@@ -182,7 +181,7 @@ senSpread os tg =
                     , offset: o
                     , gain: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                     , hpff: epwf [ Tuple 0.0 1000.0, Tuple l 300.0 ]
-                    , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
+                    , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                     }
                 )
         )
@@ -256,7 +255,7 @@ scene time =
         ( zero
             :| fold
                 ( map ((#) time)
-                    ( (senSpread 1.0 "A") <> (senEcho 1.0 "B")
+                    ( (senSpread 1.0 "SenA") <> (senEcho 1.0 "SenB")
                     )
                 )
         )

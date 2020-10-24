@@ -10,7 +10,7 @@ import In.A.Sentimental.Mood.Info.Ogg (infoMap)
 
 -- utility for data manipulation
 inBase :: Array Int
-inBase = [ 84, 83, 82 ]
+inBase = [ 43, 42, 32, 31, 24 ]
 
 main :: Effect Unit
-main = for_ inBase \i → log $ ("Tuple " <> show i <> " " <> show (fromMaybe 0.0 $ M.lookup ("Ti-D5-" <> show i) infoMap) <> ",")
+main = for_ inBase \i → log $ ("Tuple " <> show i <> " " <> show (fromMaybe 0.0 $ M.lookup ("Tal-G5-" <> show i) infoMap) <> ",")

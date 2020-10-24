@@ -19,7 +19,6 @@ import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, decodeAudioDataFromUri
 import Foreign.Object as O
 import Math (pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
-import Web.HTML.HTMLMediaElement.CanPlayType (CanPlayType(..))
 
 sounds =
   [ Tuple 24 0.9984580498866213
