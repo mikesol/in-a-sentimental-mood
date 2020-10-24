@@ -123,7 +123,7 @@ playerTal name' opts' time =
   name = "Tal-G5-" <> show name' <> "-l"
 
 data TalInfo
-  = TalInfo Int Number Number
+  = TalInfo Int Number Number (Number -> AudioParameter Number)
 
 playerTal_ :: Int -> (Number -> PlayerTalOpts) -> Number -> Behavior (AudioUnit D2)
 playerTal_ name opts time = pure $ speaker (zero :| playerTal name opts time)
@@ -134,7 +134,7 @@ peak n = [ Tuple n 0.2, Tuple (n + 0.05) 1.0, Tuple (n + 0.1) 1.0, Tuple (n + 0.
 talPlayer2 :: Number -> String -> Array (Number → List (AudioUnit D2))
 talPlayer2 os tg =
   map
-    ( \(TalInfo x y o) ->
+    ( \(TalInfo x y o gf) ->
         ( atT (y + os)
             $ playerTal x
                 ( \l' ->
@@ -144,15 +144,16 @@ talPlayer2 os tg =
                       { tag: tg <> "mp1" <> (show x) <> (show y)
                       , pan: \t -> 0.5 * sin (0.3 * pi * t)
                       , offset: o
-                      , gain: epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9, 2.7 ])
+                      , gain: gf
                       , hpff: epwf [ Tuple 0.0 10.0, Tuple l 10.0 ]
                       , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                       }
                 )
         )
     )
-    [ TalInfo 43 0.0 0.0
-    , TalInfo 42 3.0 0.0
+    [ TalInfo 43 0.0 0.0 (epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9, 2.7, 3.7, 5.0 ]))
+    , TalInfo 42 2.5 0.0 (epwf (join $ map (peak <<< (0.2 * _) <<< toNumber) (range 0 32)))
+    , TalInfo 43 7.2 0.0 (epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9, 2.7, 3.7, 5.0 ]))
     ]
 
 scene :: Number -> Behavior (AudioUnit D2)

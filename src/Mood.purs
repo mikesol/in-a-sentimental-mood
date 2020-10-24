@@ -14,11 +14,11 @@ import Data.Profunctor (lcmap)
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
-import Data.Typelevel.Num (D1, D2)
+import Data.Typelevel.Num (class Pos, D1, D2)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, bandpassT, bandpassT_, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpassT_, pannerMonoT_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, allpassT_, bandpass, bandpassT, bandpassT_, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpass, highpassT_, pannerMono, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
 import Foreign.Object as O
-import Math (pi, sin)
+import Math (pi, pow, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
 
 data MoodIdx
@@ -45,10 +45,12 @@ sounds =
   , MoodIdx (Tuple "G4" 1) 3.779047619047619
   , MoodIdx (Tuple "G4" 2) 2.7921995464852607
   , MoodIdx (Tuple "G4" 3) 3.5874829931972787
+  , MoodIdx (Tuple "G4" 4) 5.491519274376417
   , MoodIdx (Tuple "A4" 0) 2.885079365079365
   , MoodIdx (Tuple "A4" 1) 3.221768707482993
   , MoodIdx (Tuple "A4" 2) 3.0203628117913834
   , MoodIdx (Tuple "A4" 3) 3.111473922902494
+  , MoodIdx (Tuple "A4" 5) 8.765532879818593
   , MoodIdx (Tuple "B4" 0) 1.486077097505669
   , MoodIdx (Tuple "B4" 1) 2.948934240362812
   , MoodIdx (Tuple "B4" 2) 7.796099773242631
@@ -149,7 +151,8 @@ soundsMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> 
 type PlayerMoodOpts
   = { tag :: String
     , offset :: Number
-    , pan :: Number -> AudioParameter Number
+    , pan :: Number -> Number
+    , filt :: FiltSig
     , gain :: Number -> AudioParameter Number
     , bpff :: Number -> AudioParameter Number
     , bpfq :: Number -> AudioParameter Number
@@ -162,10 +165,10 @@ playerMood :: String -> Int -> (Number -> PlayerMoodOpts) -> Number -> List (Aud
 playerMood pitch name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMonoT_ (opts.tag <> "_pan") (opts.pan time)
+      $ pannerMono_ (opts.tag <> "_pan") (opts.pan time)
           ( gainT_' (opts.tag <> "_gain")
               (opts.gain time)
-              ( bandpassT_ (opts.tag <> "_bpf")
+              ( opts.filt (opts.tag <> "_bpf")
                   (opts.bpff time)
                   (opts.bpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerMood") name 1.0 opts.offset)
@@ -181,48 +184,179 @@ playerMood pitch name' opts' time =
   name = "Mood-" <> pitch <> "-" <> show name' <> "-l"
 
 data MoodInfo
-  = MoodInfo String Int Number Number
+  = MoodInfo String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) MoodPan
 
-moodPlayer2 :: Number -> String -> Array (Number → List (AudioUnit D2))
+data MoodPan
+  = MoodPan Number Number Number
+
+type FiltSig
+  = forall ch. Pos ch => String -> AudioParameter Number -> AudioParameter Number -> AudioUnit ch -> AudioUnit ch
+
+moodPlayer2 :: Number -> String -> Array (Number -> List (AudioUnit D2))
 moodPlayer2 os tg =
   map
-    ( \(MoodInfo pitch x y f) ->
+    ( \(MoodInfo pitch x y f filt q gf (MoodPan _a _b _c)) ->
         ( atT (y + os)
             $ playerMood pitch x
                 ( \l ->
                     { tag: tg <> "mp1" <> pitch <> (show x) <> (show y)
-                    , pan:
-                        epwf
-                          [ Tuple 0.0 0.0
-                          , Tuple l 0.0
-                          ]
+                    , pan: (\t -> _a * sin (_b * (t + _c) * pi))
+                    , filt
                     , offset: 0.0
-                    , gain: epwf [ Tuple 0.0 0.7, Tuple l 0.7 ]
+                    , gain: gf l
                     , bpff: epwf [ Tuple 0.0 f, Tuple 0.0 f ]
-                    , bpfq: epwf [ Tuple 0.0 4.0, Tuple l 4.0 ]
+                    , bpfq: epwf [ Tuple 0.0 q, Tuple l q ]
                     }
                 )
         )
     )
-    [ MoodInfo "E3" 0 1.1 100.0
-    , MoodInfo "E4" 0 1.0 300.0
-    , MoodInfo "F#4" 0 0.9 340.0
-    , MoodInfo "G4" 0 0.8 370.0
-    , MoodInfo "A4" 0 0.7 410.0
-    , MoodInfo "B4" 0 0.6 500.0
-    , MoodInfo "C5" 0 0.5 630.0
-    , MoodInfo "D5" 0 0.4 700.0
-    , MoodInfo "E5" 0 0.3 830.0
-    , MoodInfo "F#5" 0 0.2 950.0
-    , MoodInfo "G5" 0 0.1 1000.0
-    , MoodInfo "A5" 1 0.0 1040.0
+    [ MoodInfo "E3" 0 1.1
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 1 1.7
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 2.3
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 2 2.9
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 1 3.5 100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 4.1
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 1 4.7
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 5.3
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 5.9
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 6.5
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 7.1
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E3" 0 7.7
+        100.0 -- (conv440 (-29))
+        bandpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.0 0.2 0.2)
+    , MoodInfo "E4" 0 1.0
+        300.0 -- (conv440 (-17))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.3 0.2 0.2)
+    , MoodInfo "F#4" 0 0.9
+        400.0 -- (conv440 (-15))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.4 0.1 0.35)
+    , MoodInfo "G4" 4 0.8
+        450.0 --(conv440 (22))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.1 0.5 (-0.7))
+    , MoodInfo "A4" 5 0.7
+        500.0 --(conv440 (-12))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.05 1.0 0.05)
+    , MoodInfo "B4" 2 0.6
+        550.0 --(conv440 (14))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.15 0.4 0.0)
+    , MoodInfo "C5" 2 0.5
+        600.0 --(conv440 (3))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.6 0.6 (-0.8))
+    , MoodInfo "D5" 2 0.4
+        650.0 -- (conv440 (-7))
+        allpassT_
+        4.0
+        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+        (MoodPan 0.5 0.75 0.8)
+    , MoodInfo "E5" 0 0.3
+        700.0 --(conv440 (7))
+        allpassT_
+        3.0
+        (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
+        (MoodPan 0.9 0.15 (-0.2))
+    , MoodInfo "F#5" 0 0.2
+        800.0 --(conv440 (9))
+        allpassT_
+        2.0
+        (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
+        (MoodPan 0.3 0.5 0.9)
+    , MoodInfo "G5" 3 0.1
+        900.0 --(conv440 (10))
+        allpassT_
+        2.0
+        (\l -> epwf [ Tuple 0.0 0.3, Tuple l 0.3 ])
+        (MoodPan 0.4 0.1 (-0.2))
+    , MoodInfo "A5" 2 0.0
+        1000.0 --(conv440 0)
+        allpassT_
+        0.01
+        (\l -> epwf [ Tuple 0.0 1.0, Tuple l 1.0 ])
+        (MoodPan 0.3 0.1 0.5)
     ]
+
+conv440 :: Int -> Number
+conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
   pure
     $ speaker
-        ( zero
+        ( zero --(pannerMono 0.0 ((gain' 0.03 $ sinOsc 440.0) + (gain' 0.015 $ sinOsc 880.0)))
             :| fold
                 ( map ((#) time)
                     ( (moodPlayer2 1.0 "Mood2")
