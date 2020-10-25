@@ -130,17 +130,14 @@ playerA name' opts' time =
 
   name = "A-A4-" <> show name' <> "-l"
 
-playerA_ :: Int -> (Number -> PlayerAOpts) -> Number -> Behavior (AudioUnit D2)
-playerA_ name opts time = pure $ speaker (zero :| playerA name opts time)
-
 data DotInfo
-  = DotInfo Int Number Number A_Articulation
+  = DotInfo Int Number Number Number A_Articulation
 
-nDotInfo :: Int -> Number -> Number -> DotInfo
-nDotInfo a b c = DotInfo a b c A_Normal
+nDotInfo :: Int -> Number -> Number -> Number -> DotInfo
+nDotInfo a b c d = DotInfo a b c d A_Normal
 
-sDotInfo :: Int -> Number -> Number -> DotInfo
-sDotInfo a b c = DotInfo a b c A_Stacc
+sDotInfo :: Int -> Number -> Number -> Number -> DotInfo
+sDotInfo a b c d = DotInfo a b c d A_Stacc
 
 fast = 0.17 :: Number
 
@@ -151,7 +148,7 @@ data A_Articulation
 aDots :: Number -> String -> Array (Number → List (AudioUnit D2))
 aDots os tg =
   map
-    ( \(DotInfo x y z art) ->
+    ( \(DotInfo x f y z art) ->
         ( atT (y + os)
             $ playerA x
                 ( \l ->
@@ -165,40 +162,40 @@ aDots os tg =
                               A_Normal -> Tuple l 1.0
                               A_Stacc -> Tuple 0.2 0.0
                           ]
-                    , hpff: epwf [ Tuple 0.0 600.0, Tuple l 600.0 ]
+                    , hpff: epwf [ Tuple 0.0 (1500.0 + (f * 2000.0)), Tuple l (1500.0 + (f * 2000.0)) ]
                     , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                     }
                 )
         )
     )
-    ( foldl (\{ acc, t } e@(DotInfo x y z a) -> { acc: [ DotInfo x t z a ] <> acc, t: t + y }) { acc: [], t: 0.0 }
-          [ nDotInfo 130 0.5 0.2
-          , nDotInfo 129 0.4 (-0.3)
-          , nDotInfo 127 0.35 (0.5)
-          , nDotInfo 128 0.3 (-0.7)
-          , nDotInfo 130 0.25 (0.2)
-          , sDotInfo 129 0.2 (-0.3)
-          , sDotInfo 130 fast (-0.6)
-          , sDotInfo 128 fast (0.3)
-          , sDotInfo 127 fast (0.1)
-          , sDotInfo 129 fast (0.6)
-          , sDotInfo 130 fast (0.3)
-          , sDotInfo 129 fast (0.0)
-          , sDotInfo 128 fast (0.1)
-          , sDotInfo 127 fast (-0.2)
-          , sDotInfo 129 fast (0.0)
-          , sDotInfo 130 fast (-0.3)
-          , sDotInfo 128 fast (-0.4)
-          , sDotInfo 127 fast (-0.5)
-          , sDotInfo 128 0.2 (-0.4)
-          , sDotInfo 127 0.25 (-0.3)
-          , sDotInfo 129 0.3 (-0.15)
-          , nDotInfo 130 0.35 (0.0)
-          , nDotInfo 129 0.4 (0.1)
-          , nDotInfo 128 0.45 (0.2)
-          , nDotInfo 127 0.50 (0.3)
-          , nDotInfo 129 0.55 (0.2)
-          , nDotInfo 130 0.6 (0.1)
+    ( foldl (\{ acc, t } e@(DotInfo x f y z a) -> { acc: [ DotInfo x f t z a ] <> acc, t: t + y }) { acc: [], t: 0.0 }
+          [ nDotInfo 130 1.0 0.5 0.2
+          , nDotInfo 129 0.9 0.4 (-0.3)
+          , nDotInfo 127 0.8 0.35 (0.5)
+          , nDotInfo 128 0.7 0.3 (-0.7)
+          , nDotInfo 130 0.6 0.25 (0.2)
+          , sDotInfo 129 0.5 0.2 (-0.3)
+          , sDotInfo 130 0.4 fast (-0.6)
+          , sDotInfo 128 0.3 fast (0.3)
+          , sDotInfo 127 0.2 fast (0.1)
+          , sDotInfo 129 0.1 fast (0.6)
+          , sDotInfo 130 0.0 fast (0.3)
+          , sDotInfo 129 0.0 fast (0.0)
+          , sDotInfo 128 0.0 fast (0.1)
+          , sDotInfo 127 0.0 fast (-0.2)
+          , sDotInfo 129 0.0 fast (0.0)
+          , sDotInfo 130 0.0 fast (-0.3)
+          , sDotInfo 128 0.0 fast (-0.4)
+          , sDotInfo 127 0.1 fast (-0.5)
+          , sDotInfo 128 0.2 0.2 (-0.4)
+          , sDotInfo 127 0.3 0.25 (-0.3)
+          , sDotInfo 129 0.4 0.3 (-0.15)
+          , nDotInfo 130 0.5 0.35 (0.0)
+          , nDotInfo 129 0.6 0.4 (0.1)
+          , nDotInfo 128 0.7 0.45 (0.2)
+          , nDotInfo 127 0.8 0.50 (0.3)
+          , nDotInfo 129 0.9 0.55 (0.2)
+          , nDotInfo 130 1.0 0.6 (0.1)
           ]
       )
       .acc

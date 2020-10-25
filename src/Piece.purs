@@ -364,108 +364,55 @@ playerIn name' opts' time =
 
   name = "In-G4-" <> show name' <> "-l"
 
-fadeIn :: Number -> String -> Array (Number → List (AudioUnit D2))
+simplIn :: Number -> Int -> String -> String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+simplIn os snd tg t2 ps pe fs fe =
+  ( atT (0.0 + os)
+      $ playerIn snd
+          ( \l ->
+              { tag: tg <> t2
+              , pan: epwf [ Tuple 0.0 ps, Tuple l pe ]
+              , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
+              , hpff: epwf [ Tuple 0.0 fs, Tuple l fe ]
+              , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
+              }
+          )
+  )
+
+fadeIn :: Number -> String -> Array (Number -> List (AudioUnit D2))
 fadeIn os tg =
-  [ ( atT (0.0 + os)
-        $ playerIn 0
-            ( \l ->
-                { tag: tg <> "i0"
-                , pan: epwf [ Tuple 0.0 0.6, Tuple l (0.0) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 4000.0, Tuple l 1700.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (0.5 + os)
-        $ playerIn 3
-            ( \l ->
-                { tag: tg <> "i1"
-                , pan: epwf [ Tuple 0.0 0.6, Tuple l (-0.1) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 3500.0, Tuple l 1600.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (1.0 + os)
-        $ playerIn 3
-            ( \l ->
-                { tag: tg <> "i2"
-                , pan: epwf [ Tuple 0.0 0.6, Tuple l (-0.2) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 3000.0, Tuple l 1400.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (1.5 + os)
-        $ playerIn 0
-            ( \l ->
-                { tag: tg <> "i3"
-                , pan: epwf [ Tuple 0.0 (0.5), Tuple l (-0.3) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 2500.0, Tuple l 1300.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  ---------------------------------------
-  , ( atT (2.0 + os)
-        $ playerIn 0
-            ( \l ->
-                { tag: tg <> "i4"
-                , pan: epwf [ Tuple 0.0 0.5, Tuple l (-0.4) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 2000.0, Tuple l 1400.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (2.5 + os)
-        $ playerIn 3
-            ( \l ->
-                { tag: tg <> "i5"
-                , pan: epwf [ Tuple 0.0 0.45, Tuple l (-0.4) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 2000.0, Tuple l 1300.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (2.8 + os)
-        $ playerIn 5
-            ( \l ->
-                { tag: tg <> "i6"
-                , pan: epwf [ Tuple 0.0 0.4, Tuple l (-0.4) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 2000.0, Tuple l 1200.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (3.0 + os)
-        $ playerIn 0
-            ( \l ->
-                { tag: tg <> "i7"
-                , pan: epwf [ Tuple 0.0 (0.35), Tuple l (-0.4) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 2000.0, Tuple l 1000.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
-  , ( atT (3.5 + os)
-        $ playerIn 35
-            ( \l ->
-                { tag: tg <> "i9"
-                , pan: epwf [ Tuple 0.0 (0.3), Tuple l (0.5) ]
-                , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                , hpff: epwf [ Tuple 0.0 1800.0, Tuple l 1600.0 ]
-                , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                }
-            )
-    )
+  [ simplIn (0.0 + os) 0 tg "i0" 0.6 0.0 4000.0 1700.0
+  , simplIn (0.5 + os) 3 tg "i1" 0.6 (-0.1) 3500.0 1600.0
+  , simplIn (1.0 + os) 5 tg "i2" 0.6 (-0.2) 3000.0 1400.0
+  , simplIn (1.5 + os) 0 tg "i3" 0.5 (-0.3) 2500.0 1300.0
+  , simplIn (2.0 + os) 3 tg "i4" 0.5 (-0.4) 2000.0 1200.0
+  , simplIn (2.5 + os) 5 tg "i6" 0.45 (-0.5) 1700.0 1000.0
+  , simplIn (3.0 + os) 0 tg "i7" 0.4 (-0.6) 1500.0 800.0
+  , simplIn (3.2 + os) 35 tg "i8" 0.3 (0.5) 1800.0 1600.0
+  , simplIn (3.5 + os) 3 tg "i9" 0.3 (-0.7) 1400.0 900.0
+  , simplIn (4.0 + os) 5 tg "i10" 0.35 (-0.6) 1500.0 900.0
+  , simplIn (4.5 + os) 0 tg "i11" 0.4 (-0.55) 1600.0 1000.0
+  , simplIn (5.0 + os) 3 tg "i12" 0.5 (-0.4) 1700.0 1200.0
+  , simplIn (5.5 + os) 5 tg "i13" 0.6 (-0.3) 1900.0 1400.0
+  , simplIn (6.0 + os) 0 tg "i14" 0.7 (-0.2) 2100.0 1600.0
+  , simplIn (6.5 + os) 3 tg "i15" 0.8 (-0.1) 2400.0 1700.0
+  , simplIn (7.0 + os) 5 tg "i16" 0.9 (0.0) 2500.0 1900.0
+  , simplIn (7.5 + os) 0 tg "i17" 0.9 (0.1) 2600.0 2000.0
+  , simplIn (8.0 + os) 3 tg "i18" 0.9 (0.2) 2700.0 2100.0
+  , simplIn (8.5 + os) 5 tg "i19" 0.9 (0.3) 2800.0 2200.0
+  , simplIn (9.0 + os) 0 tg "i20" 0.9 (0.2) 3000.0 2900.0
+  , simplIn (9.5 + os) 3 tg "i21" 0.9 (0.0) 3200.0 3000.0
+  , simplIn (10.0 + os) 5 tg "i22" 0.9 (0.0) 3500.0 3400.0
+  , simplIn (10.5 + os) 0 tg "i23" 0.9 (-0.1) 3800.0 3500.0
+  , simplIn (11.0 + os) 3 tg "i24" 0.9 (-0.2) 4000.0 3700.0
+  , simplIn (11.5 + os) 5 tg "i25" 0.9 (-0.3) 4000.0 3700.0
+  , simplIn (12.0 + os) 0 tg "i26" 0.9 (-0.4) 4000.0 3700.0
+  , simplIn (12.5 + os) 3 tg "i27" 0.9 (-0.5) 4100.0 3700.0
+  , simplIn (13.0 + os) 5 tg "i28" 0.9 (-0.6) 4200.0 3700.0
+  , simplIn (13.5 + os) 0 tg "i29" 0.9 (-0.7) 4300.0 3700.0
+  , simplIn (14.0 + os) 3 tg "i30" 0.9 (-0.8) 4400.0 3800.0
+  , simplIn (14.5 + os) 5 tg "i31" 0.9 (-0.9) 4400.0 3900.0
+  , simplIn (15.0 + os) 0 tg "i32" 0.9 (-0.9) 4400.0 4000.0
+  , simplIn (15.5 + os) 3 tg "i33" 0.9 (-0.9) 4400.0 4000.0
   ]
 
 --------------------
