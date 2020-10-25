@@ -62,6 +62,7 @@ soundsA =
   , Tuple 42 3.581700680272109
   , Tuple 35 2.008231292517007
   , Tuple 29 1.2421995464852609
+  , Tuple 106 12.736371882086168
   ] ::
     Array (Tuple Int Number)
 
@@ -80,6 +81,7 @@ soundsSen =
   , Tuple 108 1.2045804988662132
   , Tuple 107 1.227142857142857
   , Tuple 101 1.400294784580499
+  , Tuple 61 11.070680272108843
   ] ::
     Array (Tuple Int Number)
 
@@ -93,6 +95,7 @@ soundsTi =
   [ Tuple 84 8.447006802721088
   , Tuple 83 12.203718820861678
   , Tuple 82 11.849886621315193
+  , Tuple 19 17.6543537414966
   ] ::
     Array (Tuple Int Number)
 
@@ -351,6 +354,18 @@ type PlayerInOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
+playerDrone :: String -> String -> Number -> Number -> List (AudioUnit D2)
+playerDrone tag name prate time =
+  if time + kr >= 0.0 && time < 18.0 then
+    pure
+      $ pannerMono_ (tag <> "_panDrone") 0.0
+          ( gainT_' (tag <> "_gainDrone")
+              ((epwf [ Tuple 0.0 0.0, Tuple 3.0 (0.4), Tuple 20.0 0.4 ]) time)
+              (playBuf_ (tag <> "_playerDrone") name prate)
+          )
+  else
+    Nil
+
 playerIn :: Int -> (Number -> PlayerInOpts) -> Number -> List (AudioUnit D2)
 playerIn name' opts' time =
   if time + kr >= 0.0 && time < len then
@@ -361,9 +376,7 @@ playerIn name' opts' time =
               ( highpassT_ (opts.tag <> "_hpfIn")
                   (opts.hpff time)
                   (opts.hpfq time)
-                  -- pitch shift adds interesting feel
-                  -- experiment with keeping or not
-                  (playBufT_ (opts.tag <> "_playerIn") name (epwf [ Tuple 0.0 0.98, Tuple len (1.0) ] time))
+                  (playBufT_ (opts.tag <> "_playerIn") name (epwf [ Tuple 0.0 1.0, Tuple len (1.0) ] time))
               )
           )
   else
@@ -469,7 +482,7 @@ nDotInfo a b c d = DotInfo a b c d A_Normal
 sDotInfo :: Int -> Number -> Number -> Number -> DotInfo
 sDotInfo a b c d = DotInfo a b c d A_Stacc
 
-fast = 0.17 :: Number
+fast = 0.35 :: Number
 
 data A_Articulation
   = A_Normal
@@ -479,7 +492,7 @@ aCF = 1000.0 :: Number
 
 aMF = 1500.0 :: Number
 
-aGn = 2.0 :: Number
+aGn = 2.6 :: Number
 
 aDots :: Number -> String -> Array (Number → List (AudioUnit D2))
 aDots os tg =
@@ -496,7 +509,7 @@ aDots os tg =
                           , Tuple 0.12 aGn
                           , case art of
                               A_Normal -> Tuple l 0.0
-                              A_Stacc -> Tuple 0.4 0.0
+                              A_Stacc -> Tuple 0.6 0.0
                           ]
                     , hpff: epwf [ Tuple 0.0 (aCF + (f * aMF)), Tuple l (aCF + (f * aMF)) ]
                     , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
@@ -505,32 +518,23 @@ aDots os tg =
         )
     )
     ( foldl (\{ acc, t } e@(DotInfo x f y z a) -> { acc: [ DotInfo x f t z a ] <> acc, t: t + y }) { acc: [], t: 0.0 }
-          [ nDotInfo 130 1.0 0.65 0.8
-          , nDotInfo 129 0.4 0.6 (-0.8)
-          , nDotInfo 127 1.0 0.55 (0.0)
+          [ nDotInfo 130 1.0 0.65 0.0
+          , nDotInfo 129 0.8 0.6 (0.1)
+          , nDotInfo 127 1.0 0.55 (-0.0)
           , nDotInfo 130 1.0 0.5 0.2
-          , nDotInfo 129 0.4 0.4 (-0.3)
-          , nDotInfo 127 0.8 0.35 (0.5)
-          , nDotInfo 128 0.7 0.3 (-0.7)
-          , nDotInfo 130 0.2 0.25 (0.2)
-          , sDotInfo 129 0.5 0.2 (-0.3)
-          , sDotInfo 130 0.4 fast (-0.6)
-          , sDotInfo 128 0.3 fast (0.3)
-          , sDotInfo 127 0.2 fast (0.1)
-          , sDotInfo 129 0.15 fast (0.6)
-          , sDotInfo 130 (0.2) fast (-0.3)
-          , sDotInfo 129 (0.45) fast (0.5)
-          , sDotInfo 128 (0.2) fast (-0.6)
-          , sDotInfo 127 (0.55) fast (0.8)
-          , sDotInfo 129 (0.2) fast (0.0)
-          , sDotInfo 130 (0.45) fast (-0.8)
-          , sDotInfo 128 (0.2) fast (0.4)
-          , sDotInfo 127 0.1 fast (-0.5)
-          , sDotInfo 128 0.2 0.2 (-0.0)
-          , sDotInfo 127 0.3 0.25 (-0.3)
-          , sDotInfo 129 0.4 0.3 (-0.15)
-          , nDotInfo 130 0.5 0.35 (0.0)
-          , nDotInfo 129 0.6 0.4 (0.1)
+          , nDotInfo 129 0.9 0.4 (-0.3)
+          , sDotInfo 130 1.0 fast (-0.6)
+          , sDotInfo 128 0.9 fast (0.3)
+          , sDotInfo 127 0.8 fast (0.1)
+          , sDotInfo 129 0.65 fast (0.6)
+          , sDotInfo 130 (0.7) fast (-0.3)
+          , sDotInfo 129 (0.65) fast (0.5)
+          , sDotInfo 128 (0.7) fast (-0.6)
+          , sDotInfo 127 (0.65) fast (0.8)
+          , sDotInfo 129 (0.7) fast (0.0)
+          , sDotInfo 130 (0.65) fast (-0.8)
+          , sDotInfo 128 (0.7) fast (0.4)
+          , sDotInfo 127 0.65 fast (-0.5)
           , nDotInfo 128 0.7 0.45 (0.2)
           , nDotInfo 127 0.8 0.50 (0.3)
           , nDotInfo 129 0.9 0.55 (0.2)
@@ -591,6 +595,9 @@ data SenDir
 
 fSI :: (Number -> Number) -> Array SenInfo -> Array SenInfo
 fSI f = map (\(SenInfo a b c d e q) -> SenInfo a (f b) c d e q)
+
+quietSen :: Array SenInfo -> Array SenInfo
+quietSen = map (\(SenInfo a b c d e f) -> SenInfo a b c d (e * 0.5) (f * 0.5))
 
 fSEI :: (Number -> Number) -> Array SenEchoInfo -> Array SenEchoInfo
 fSEI f = map (\(SenEchoInfo a b c d) -> SenEchoInfo a (f b) c d)
@@ -687,12 +694,9 @@ senArr os =
       <> (senEcho os "SenB" senEchoInfo)
       <> (senSpread os "SenC" $ fSI (\i -> 6.0 - i * 0.4 / 0.6) senInfo)
       <> (senEcho os "SenD" $ fSEI (\i -> 6.0 - i * 0.4 / 0.6) senEchoInfo)
-      <> (senSpread os "SenE" $ fSI (\i -> 6.0 + i * 0.5) senInfo)
-      <> (senEcho os "SenF" $ fSEI (\i -> 6.0 + i * 0.5) senEchoInfo)
-      <> (senSpread os "SenG" $ fSI (\i -> 11.0 - i * 0.4 / 0.6) senInfo)
-      <> (senEcho os "SenH" $ fSEI (\i -> 11.0 - i * 0.4 / 0.6) senEchoInfo)
-      <> (senSpread os "SenI" $ fSI (\i -> 11.0 + i * 0.6) senInfo)
-      <> (senEcho os "SenJ" $ fSEI (\i -> 11.0 + i * 0.6) senEchoInfo)
+      <> (senSpread os "SenE" $ fSI (\i -> 6.0 + i * 0.5) (quietSen senInfo))
+      <> (senSpread os "SenG" $ fSI (\i -> 11.0 - i * 0.4 / 0.6) (quietSen senInfo))
+      <> (senSpread os "SenI" $ fSI (\i -> 11.0 + i * 0.6) (quietSen senInfo))
   )
 
 -------------------------------
@@ -743,7 +747,8 @@ tiDots os tg =
                     , pan: pf
                     , gain:
                         epwf
-                          [ Tuple 0.0 1.0
+                          [ Tuple 0.0 0.0
+                          , Tuple 1.0 1.0
                           , Tuple l 1.0
                           ]
                     , hpff: epwf [ Tuple 0.0 1800.0, Tuple l 400.0 ]
@@ -852,7 +857,7 @@ menPlayer2 os tg =
                                 MenRight -> (-0.9)
                             ]
                       , offset: o
-                      , gain: epwf [ Tuple 0.0 1.0, Tuple 0.4 1.0, Tuple l 0.0 ]
+                      , gain: epwf [ Tuple 0.0 0.5, Tuple 0.4 0.5, Tuple l 0.0 ]
                       , hpff: epwf [ Tuple 0.0 300.0, Tuple l 2000.0 ]
                       , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                       }
@@ -861,12 +866,14 @@ menPlayer2 os tg =
     )
     [ MenInfo 95 0.0 0.0 MenLeft
     , MenInfo 82 1.0 0.0 MenRight
-    , MenInfo 93 2.0 0.0 MenLeft
+    , MenInfo 95 2.0 0.0 MenLeft
     , MenInfo 94 3.0 0.0 MenRight
     , MenInfo 95 4.0 0.0 MenLeft
     , MenInfo 82 5.0 0.0 MenRight
-    , MenInfo 93 6.0 0.0 MenLeft
+    , MenInfo 94 6.0 0.0 MenLeft
     , MenInfo 94 7.0 0.0 MenRight
+    , MenInfo 95 8.0 0.0 MenLeft
+    , MenInfo 82 9.0 0.0 MenRight
     ]
 
 ---------------------------------------
@@ -932,9 +939,8 @@ talPlayer2 os tg =
                 )
         )
     )
-    [ TalInfo 43 0.0 0.0 (epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9, 2.7, 3.7, 5.0 ]))
-    , TalInfo 42 2.5 0.0 (epwf (join $ map (peak <<< (0.2 * _) <<< toNumber) (range 0 32)))
-    , TalInfo 43 7.2 0.0 (epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9, 2.7, 3.7, 5.0 ]))
+    [ TalInfo 43 0.0 0.0 (epwf (join $ map peak [ 0.0, 0.2, 0.45, 0.7, 1.0, 1.4, 1.9 ]))
+    , TalInfo 42 2.5 0.0 (epwf (join $ map (peak <<< (0.2 * _) <<< toNumber) (range 0 24)))
     ]
 
 ----------------------------------------
@@ -953,7 +959,7 @@ type PlayerMoodOpts
 
 playerMood :: String -> Int -> (Number -> PlayerMoodOpts) -> Number -> List (AudioUnit D2)
 playerMood pitch name' opts' time =
-  if time + kr >= 0.0 && time < len then
+  if time + kr >= 0.0 && time < (len + 3.0) then
     pure
       $ pannerMono_ (opts.tag <> "_panMood") (opts.pan time)
           ( gainT_' (opts.tag <> "_gainMood")
@@ -1011,7 +1017,7 @@ moodPlayer2 os tg =
                 100.0 -- (conv440 (-29))
                 bandpassT_
                 4.0
-                (\l -> epwf [ Tuple 0.0 1.0, Tuple l 1.0 ])
+                (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.2 1.0, Tuple (l - 0.15) 1.0, Tuple l 0.0 ])
                 (MoodPan 0.0 0.2 0.2)
           )
           (range 0 8)
@@ -1095,27 +1101,25 @@ scene time =
         ( zero
             :| fold
                 ( map ((#) time)
-                    ( [ ( atT 0.0
-                            $ playerIn 78
-                                ( \l ->
-                                    { tag: "drone"
-                                    , pan: epwf [ Tuple 0.0 (-0.8), Tuple l (-0.4) ]
-                                    , gain: epwf [ Tuple 0.0 0.0, Tuple 2.0 0.3, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-                                    , hpff: epwf [ Tuple 0.0 800.0, Tuple l 400.0 ]
-                                    , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
-                                    }
-                                )
-                        )
+                    ( [ atT 3.0 $ playerDrone "Indr" "In-G4-78-l" 1.0
+                      , atT 3.0 $ playerDrone "Adr" "A-A4-106-l" 1.0
+                      , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
+                      , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
+                      , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
+                      , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
+                      , atT 20.0 $ playerDrone "Indr1" "In-G4-78-l" 1.0
+                      , atT 17.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
+                      , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
                       ]
                         <> (fadeIn 0.0 "In")
-                        <> (aDots 4.0 "A")
+                        <> (aDots 4.5 "A")
                         <> (senArr 7.0)
-                        <> (tiDots 11.0 "Ti1")
+                        <> (tiDots 11.9 "Ti1")
                         <> (tiDots 20.0 "Ti2")
                         <> (menPlayer1 16.0 "Men1")
                         <> (menPlayer2 16.0 "Men2")
                         <> (talPlayer2 20.0 "Tal2")
-                        <> (moodPlayer2 26.0 "Mood2")
+                        <> (moodPlayer2 24.5 "Mood2")
                     )
                 )
         )
