@@ -16,7 +16,7 @@ import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpassT_, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpassT_, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
 import Math (cos, pi, pow, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, klank, makeBuffersKeepingCache)
@@ -366,6 +366,18 @@ playerDrone tag name prate time =
   else
     Nil
 
+oscSimpl :: String -> Number -> Number -> Number -> List (AudioUnit D2)
+oscSimpl tag end freq time =
+  if time + kr >= 0.0 && time < end then
+    pure
+      $ pannerMono_ (tag <> "_panOscSimpl") 0.0
+          ( gainT_' (tag <> "_gainOscSimpl")
+              ((epwf [ Tuple 0.0 0.0, Tuple 3.0 (0.01), Tuple end 0.0 ]) time)
+              (sinOsc_ (tag <> "_sinOscSimpl") freq)
+          )
+  else
+    Nil
+
 playerIn :: Int -> (Number -> PlayerInOpts) -> Number -> List (AudioUnit D2)
 playerIn name' opts' time =
   if time + kr >= 0.0 && time < len then
@@ -692,11 +704,12 @@ senArr :: Number -> Array (Number -> List (AudioUnit D2))
 senArr os =
   ( (senSpread os "SenA" senInfo)
       <> (senEcho os "SenB" senEchoInfo)
-      <> (senSpread os "SenC" $ fSI (\i -> 6.0 - i * 0.4 / 0.6) senInfo)
-      <> (senEcho os "SenD" $ fSEI (\i -> 6.0 - i * 0.4 / 0.6) senEchoInfo)
-      <> (senSpread os "SenE" $ fSI (\i -> 6.0 + i * 0.5) (quietSen senInfo))
-      <> (senSpread os "SenG" $ fSI (\i -> 11.0 - i * 0.4 / 0.6) (quietSen senInfo))
-      <> (senSpread os "SenI" $ fSI (\i -> 11.0 + i * 0.6) (quietSen senInfo))
+      <> (senSpread os "SenC" $ fSI (\i -> 6.4 - i * 0.4 / 0.6) senInfo)
+      --<> (senEcho os "SenD" $ fSEI (\i -> 6.0 - i * 0.4 / 0.6) senEchoInfo)
+      
+      <> (senSpread os "SenE" $ fSI (\i -> 6.4 + i * 0.5) (quietSen senInfo))
+      <> (senSpread os "SenG" $ fSI (\i -> 11.2 - i * 0.4 / 0.6) (quietSen senInfo))
+      <> (senSpread os "SenI" $ fSI (\i -> 11.2 + i * 0.6) (quietSen senInfo))
   )
 
 -------------------------------
@@ -784,7 +797,7 @@ playerMen name' opts' time =
               ( highpassT_ (opts.tag <> "_hpfMen")
                   (opts.hpff time)
                   (opts.hpfq time)
-                  (playBufWithOffset_ (opts.tag <> "_playerMen") name 1.0 opts.offset)
+                  (playBufWithOffset_ (opts.tag <> "_playerMen") name 1.01 opts.offset)
               )
           )
   else
@@ -798,9 +811,6 @@ playerMen name' opts' time =
 
 data MenInfo
   = MenInfo Int Number Number MenDir
-
-playerMen_ :: Int -> (Number -> PlayerMenOpts) -> Number -> Behavior (AudioUnit D2)
-playerMen_ name opts time = pure $ speaker (zero :| playerMen name opts time)
 
 data MenDir
   = MenLeft
@@ -857,7 +867,7 @@ menPlayer2 os tg =
                                 MenRight -> (-0.9)
                             ]
                       , offset: o
-                      , gain: epwf [ Tuple 0.0 0.5, Tuple 0.4 0.5, Tuple l 0.0 ]
+                      , gain: epwf [ Tuple 0.0 0.1, Tuple 0.4 0.5, Tuple l 0.0 ]
                       , hpff: epwf [ Tuple 0.0 300.0, Tuple l 2000.0 ]
                       , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                       }
@@ -874,6 +884,8 @@ menPlayer2 os tg =
     , MenInfo 94 7.0 0.0 MenRight
     , MenInfo 95 8.0 0.0 MenLeft
     , MenInfo 82 9.0 0.0 MenRight
+    , MenInfo 95 10.0 0.0 MenLeft
+    , MenInfo 82 11.0 0.0 MenRight
     ]
 
 ---------------------------------------
@@ -1102,17 +1114,22 @@ scene time =
             :| fold
                 ( map ((#) time)
                     ( [ atT 3.0 $ playerDrone "Indr" "In-G4-78-l" 1.0
-                      , atT 3.0 $ playerDrone "Adr" "A-A4-106-l" 1.0
+                      , atT 7.0 $ oscSimpl "InOsc" 7.0 (conv440 (-14))
+                      , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
+                      , atT 9.0 $ oscSimpl "AOsc" 7.0 (conv440 (-12))
                       , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
+                      , atT 11.0 $ oscSimpl "SenOsc" 7.0 (conv440 (-10))
                       , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
+                      , atT 15.0 $ oscSimpl "TiOsc" 7.0 (conv440 (-7))
                       , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
+                      , atT 17.0 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
                       , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
                       , atT 20.0 $ playerDrone "Indr1" "In-G4-78-l" 1.0
                       , atT 17.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
                       , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
                       ]
                         <> (fadeIn 0.0 "In")
-                        <> (aDots 4.5 "A")
+                        <> (aDots 4.0 "A")
                         <> (senArr 7.0)
                         <> (tiDots 11.9 "Ti1")
                         <> (tiDots 20.0 "Ti2")
