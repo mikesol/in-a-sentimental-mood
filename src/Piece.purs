@@ -711,12 +711,11 @@ senArr :: Number -> Array (Number -> List (AudioUnit D2))
 senArr os =
   ( (senSpread os "SenA" senInfo)
       <> (senEcho os "SenB" senEchoInfo)
-      <> (senSpread os "SenC" $ fSI (\i -> 6.4 - i * 0.4 / 0.6) senInfo)
-      --<> (senEcho os "SenD" $ fSEI (\i -> 6.0 - i * 0.4 / 0.6) senEchoInfo)
-      
-      <> (senSpread os "SenE" $ fSI (\i -> 6.4 + i * 0.5) (quietSen senInfo))
-      <> (senSpread os "SenG" $ fSI (\i -> 11.2 - i * 0.4 / 0.6) (quietSen senInfo))
-      <> (senSpread os "SenI" $ fSI (\i -> 11.2 + i * 0.6) (quietSen senInfo))
+      <> (senSpread os "SenC" $ fSI (\i -> 7.5 - i * 0.4 / 0.6) senInfo)
+      <> (senSpread os "SenG" $ fSI (\i -> 11.4 - i * 0.4 / 0.6) (quietSen senInfo))
+      <> (senSpread os "SenI" $ fSI (\i -> 11.4 + i * 0.6) (quietSen senInfo))
+      <> (senSpread os "SenJ" $ fSI (\i -> 17.0 + i * 0.8) (quietSen senInfo))
+      <> (senSpread os "SenK" $ fSI (\i -> 23.0 + i * 1.0) (quietSen senInfo))
   )
 
 -------------------------------
@@ -1132,7 +1131,7 @@ scene time =
                       , atT 17.0 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
                       , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
                       , atT 20.0 $ playerDrone "Indr1" "In-G4-78-l" 1.0
-                      , atT 17.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
+                      , atT 16.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
                       , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
                       ]
                         <> (fadeIn 0.0 "In")
