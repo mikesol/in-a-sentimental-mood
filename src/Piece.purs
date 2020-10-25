@@ -616,7 +616,7 @@ fSI :: (Number -> Number) -> Array SenInfo -> Array SenInfo
 fSI f = map (\(SenInfo a b c d e q) -> SenInfo a (f b) c d e q)
 
 quietSen :: Array SenInfo -> Array SenInfo
-quietSen = map (\(SenInfo a b c d e f) -> SenInfo a b c d (e * 0.5) (f * 0.5))
+quietSen = map (\(SenInfo a b c d e f) -> SenInfo a b c d 0.3 0.3)
 
 fSEI :: (Number -> Number) -> Array SenEchoInfo -> Array SenEchoInfo
 fSEI f = map (\(SenEchoInfo a b c d) -> SenEchoInfo a (f b) c d)
@@ -712,10 +712,10 @@ senArr os =
   ( (senSpread os "SenA" senInfo)
       <> (senEcho os "SenB" senEchoInfo)
       <> (senSpread os "SenC" $ fSI (\i -> 7.5 - i * 0.4 / 0.6) senInfo)
-      <> (senSpread os "SenG" $ fSI (\i -> 11.4 - i * 0.4 / 0.6) (quietSen senInfo))
+      <> (senSpread os "SenG" $ fSI (\i -> 8.3 + i * 0.6) (quietSen senInfo))
       <> (senSpread os "SenI" $ fSI (\i -> 11.4 + i * 0.6) (quietSen senInfo))
-      <> (senSpread os "SenJ" $ fSI (\i -> 17.0 + i * 0.8) (quietSen senInfo))
-      <> (senSpread os "SenK" $ fSI (\i -> 23.0 + i * 1.0) (quietSen senInfo))
+      <> (senSpread os "SenJ" $ fSI (\i -> 15.0 + i * 0.8) (quietSen senInfo))
+      <> (senSpread os "SenK" $ fSI (\i -> 19.0 + i * 1.0) (quietSen senInfo))
   )
 
 -------------------------------
