@@ -145,6 +145,12 @@ data A_Articulation
   = A_Normal
   | A_Stacc
 
+aCF = 1000.0 :: Number
+
+aMF = 1500.0 :: Number
+
+aGn = 2.0 :: Number
+
 aDots :: Number -> String -> Array (Number → List (AudioUnit D2))
 aDots os tg =
   map
@@ -157,37 +163,40 @@ aDots os tg =
                     , gain:
                         epwf
                           [ Tuple 0.0 0.0
-                          , Tuple 0.1 1.0
+                          , Tuple 0.1 aGn
                           , case art of
-                              A_Normal -> Tuple l 1.0
-                              A_Stacc -> Tuple 0.2 0.0
+                              A_Normal -> Tuple l 0.0
+                              A_Stacc -> Tuple 0.3 0.0
                           ]
-                    , hpff: epwf [ Tuple 0.0 (1500.0 + (f * 2000.0)), Tuple l (1500.0 + (f * 2000.0)) ]
+                    , hpff: epwf [ Tuple 0.0 (aCF + (f * aMF)), Tuple l (aCF + (f * aMF)) ]
                     , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                     }
                 )
         )
     )
     ( foldl (\{ acc, t } e@(DotInfo x f y z a) -> { acc: [ DotInfo x f t z a ] <> acc, t: t + y }) { acc: [], t: 0.0 }
-          [ nDotInfo 130 1.0 0.5 0.2
-          , nDotInfo 129 0.9 0.4 (-0.3)
+          [ nDotInfo 130 1.0 0.65 0.8
+          , nDotInfo 129 0.4 0.6 (-0.8)
+          , nDotInfo 127 1.0 0.55 (0.0)
+          , nDotInfo 130 1.0 0.5 0.2
+          , nDotInfo 129 0.4 0.4 (-0.3)
           , nDotInfo 127 0.8 0.35 (0.5)
           , nDotInfo 128 0.7 0.3 (-0.7)
-          , nDotInfo 130 0.6 0.25 (0.2)
+          , nDotInfo 130 0.2 0.25 (0.2)
           , sDotInfo 129 0.5 0.2 (-0.3)
           , sDotInfo 130 0.4 fast (-0.6)
           , sDotInfo 128 0.3 fast (0.3)
           , sDotInfo 127 0.2 fast (0.1)
-          , sDotInfo 129 0.1 fast (0.6)
-          , sDotInfo 130 0.0 fast (0.3)
-          , sDotInfo 129 0.0 fast (0.0)
-          , sDotInfo 128 0.0 fast (0.1)
-          , sDotInfo 127 0.0 fast (-0.2)
-          , sDotInfo 129 0.0 fast (0.0)
-          , sDotInfo 130 0.0 fast (-0.3)
-          , sDotInfo 128 0.0 fast (-0.4)
+          , sDotInfo 129 0.15 fast (0.6)
+          , sDotInfo 130 (0.2) fast (-0.3)
+          , sDotInfo 129 (0.45) fast (0.5)
+          , sDotInfo 128 (0.2) fast (-0.6)
+          , sDotInfo 127 (0.55) fast (0.8)
+          , sDotInfo 129 (0.2) fast (0.0)
+          , sDotInfo 130 (0.45) fast (-0.8)
+          , sDotInfo 128 (0.2) fast (0.4)
           , sDotInfo 127 0.1 fast (-0.5)
-          , sDotInfo 128 0.2 0.2 (-0.4)
+          , sDotInfo 128 0.2 0.2 (-0.0)
           , sDotInfo 127 0.3 0.25 (-0.3)
           , sDotInfo 129 0.4 0.3 (-0.15)
           , nDotInfo 130 0.5 0.35 (0.0)
@@ -196,6 +205,12 @@ aDots os tg =
           , nDotInfo 127 0.8 0.50 (0.3)
           , nDotInfo 129 0.9 0.55 (0.2)
           , nDotInfo 130 1.0 0.6 (0.1)
+          , nDotInfo 129 0.9 0.9 (0.0)
+          , nDotInfo 127 0.9 1.2 (-0.1)
+          , nDotInfo 128 0.9 1.5 (-0.2)
+          , nDotInfo 130 0.9 1.8 (-0.3)
+          , nDotInfo 127 0.9 2.0 (-0.4)
+          , nDotInfo 127 0.9 2.5 (-0.5)
           ]
       )
       .acc

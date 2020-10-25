@@ -154,16 +154,45 @@ playerSen name' opts' time =
   name = "Sen-B4-" <> show name' <> "-l"
 
 data SenInfo
-  = SenInfo Int Number Number SenDir
+  = SenInfo Int Number Number SenDir Number Number
+
+data SenEchoInfo
+  = SenEchoInfo Int Number Number SenDir
 
 data SenDir
   = SenLeft
   | SenRight
 
-senSpread :: Number -> String -> Array (Number → List (AudioUnit D2))
-senSpread os tg =
+fSI :: (Number -> Number) -> Array SenInfo -> Array SenInfo
+fSI f = map (\(SenInfo a b c d e q) -> SenInfo a (f b) c d e q)
+
+fSEI :: (Number -> Number) -> Array SenEchoInfo -> Array SenEchoInfo
+fSEI f = map (\(SenEchoInfo a b c d) -> SenEchoInfo a (f b) c d)
+
+senInfo :: Array SenInfo
+senInfo =
+  [ SenInfo 105 0.0 0.0 SenLeft 0.1 0.1
+  , SenInfo 104 0.0 0.0 SenRight 0.1 0.1
+  , SenInfo 103 0.6 0.0 SenLeft 0.2 0.2
+  , SenInfo 102 0.6 0.0 SenRight 0.2 0.2
+  , SenInfo 114 1.2 0.0 SenLeft 0.3 0.3
+  , SenInfo 108 1.2 0.0 SenRight 0.3 0.3
+  , SenInfo 103 1.8 0.0 SenLeft 0.4 0.4
+  , SenInfo 102 1.8 0.0 SenRight 0.4 0.4
+  , SenInfo 105 2.4 0.0 SenLeft 0.5 0.5
+  , SenInfo 104 2.4 0.0 SenRight 0.5 0.5
+  , SenInfo 103 3.0 0.0 SenLeft 0.6 0.6
+  , SenInfo 102 3.0 0.0 SenRight 0.6 0.6
+  , SenInfo 114 3.6 0.0 SenLeft 0.7 0.7
+  , SenInfo 108 3.6 0.0 SenRight 0.7 0.7
+  , SenInfo 103 4.2 0.0 SenLeft 0.8 0.8
+  , SenInfo 102 4.2 0.0 SenRight 0.8 0.8
+  ]
+
+senSpread :: Number -> String -> Array SenInfo -> Array (Number → List (AudioUnit D2))
+senSpread os tg si =
   map
-    ( \(SenInfo x y o sd) ->
+    ( \(SenInfo x y o sd gs ge) ->
         ( atT (y + os)
             $ playerSen x
                 ( \l ->
@@ -176,35 +205,32 @@ senSpread os tg =
                               SenRight -> 0.9
                           ]
                     , offset: o
-                    , gain: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
-                    , hpff: epwf [ Tuple 0.0 1000.0, Tuple l 300.0 ]
+                    , gain: epwf [ Tuple 0.0 gs, Tuple l ge ]
+                    , hpff: epwf [ Tuple 0.0 (1000.0 + (600.0 * (1.0 - gs))), Tuple l (300.0 + (600.0 * (1.0 - gs))) ]
                     , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                     }
                 )
         )
     )
-    [ SenInfo 105 0.0 0.0 SenLeft
-    , SenInfo 104 0.0 0.0 SenRight
-    , SenInfo 103 0.6 0.0 SenLeft
-    , SenInfo 102 0.6 0.0 SenRight
-    , SenInfo 114 1.2 0.0 SenLeft
-    , SenInfo 108 1.2 0.0 SenRight
-    , SenInfo 103 1.8 0.0 SenLeft
-    , SenInfo 102 1.8 0.0 SenRight
-    , SenInfo 105 2.4 0.0 SenLeft
-    , SenInfo 104 2.4 0.0 SenRight
-    , SenInfo 103 3.0 0.0 SenLeft
-    , SenInfo 102 3.0 0.0 SenRight
-    , SenInfo 114 3.6 0.0 SenLeft
-    , SenInfo 108 3.6 0.0 SenRight
-    , SenInfo 103 4.2 0.0 SenLeft
-    , SenInfo 102 4.2 0.0 SenRight
-    ]
+    si
 
-senEcho :: Number -> String -> Array (Number → List (AudioUnit D2))
-senEcho os tg =
+senEchoInfo :: Array SenEchoInfo
+senEchoInfo =
+  [ SenEchoInfo 105 0.3 0.3 SenLeft
+  , SenEchoInfo 102 0.9 0.3 SenRight
+  , SenEchoInfo 108 1.5 0.3 SenRight
+  , SenEchoInfo 103 2.1 0.3 SenLeft
+  , SenEchoInfo 105 2.7 0.3 SenLeft
+  , SenEchoInfo 104 2.7 0.3 SenRight
+  , SenEchoInfo 102 3.3 0.3 SenRight
+  , SenEchoInfo 108 3.9 0.3 SenRight
+  , SenEchoInfo 103 4.5 0.3 SenLeft
+  ]
+
+senEcho :: Number -> String -> Array SenEchoInfo -> Array (Number → List (AudioUnit D2))
+senEcho os tg sei =
   map
-    ( \(SenInfo x y o sd) ->
+    ( \(SenEchoInfo x y o sd) ->
         let
           pz = case sd of
             SenLeft -> (-1.0)
@@ -217,33 +243,27 @@ senEcho os tg =
                       , pan:
                           epwf
                             [ Tuple 0.0 pz
-                            , Tuple l 0.0
+                            , Tuple l (-1.0 * pz)
                             ]
                       , offset: o
                       , gain: epwf [ Tuple 0.0 0.0, Tuple 0.2 0.9, Tuple l 0.2 ]
-                      , hpff: epwf [ Tuple 0.0 3000.0, Tuple l 1000.0 ]
+                      , hpff: epwf [ Tuple 0.0 3000.0, Tuple l 500.0 ]
                       , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
                       }
                   )
           )
     )
-    [ SenInfo 105 0.3 0.3 SenLeft
-    , SenInfo 104 0.3 0.3 SenRight
-    , SenInfo 103 0.9 0.3 SenLeft
-    , SenInfo 102 0.9 0.3 SenRight
-    , SenInfo 114 1.5 0.3 SenLeft
-    , SenInfo 108 1.5 0.3 SenRight
-    , SenInfo 103 2.1 0.3 SenLeft
-    , SenInfo 102 2.1 0.3 SenRight
-    , SenInfo 105 2.7 0.3 SenLeft
-    , SenInfo 104 2.7 0.3 SenRight
-    , SenInfo 103 3.3 0.3 SenLeft
-    , SenInfo 102 3.3 0.3 SenRight
-    , SenInfo 114 3.9 0.3 SenLeft
-    , SenInfo 108 3.9 0.3 SenRight
-    , SenInfo 103 4.5 0.3 SenLeft
-    , SenInfo 102 4.5 0.3 SenRight
-    ]
+    sei
+
+senArr :: Number -> Array (Number -> List (AudioUnit D2))
+senArr os =
+  ( (senSpread os "SenA" senInfo)
+      <> (senEcho os "SenB" senEchoInfo)
+      <> (senSpread os "SenC" $ fSI (\i -> 6.0 - i * 0.4 / 0.6) senInfo)
+      <> (senEcho os "SenD" $ fSEI (\i -> 6.0 - i * 0.4 / 0.6) senEchoInfo)
+      <> (senSpread os "SenE" $ fSI (\i -> 6.0 + i * 0.5) senInfo)
+      <> (senEcho os "SenF" $ fSEI (\i -> 6.0 + i * 0.5) senEchoInfo)
+  )
 
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
@@ -252,7 +272,6 @@ scene time =
         ( zero
             :| fold
                 ( map ((#) time)
-                    ( (senSpread 1.0 "SenA") <> (senEcho 1.0 "SenB")
-                    )
+                    (senArr 1.0)
                 )
         )
