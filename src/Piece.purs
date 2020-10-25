@@ -369,12 +369,19 @@ playerDrone tag name prate time =
 oscSimpl :: String -> Number -> Number -> Number -> List (AudioUnit D2)
 oscSimpl tag end freq time =
   if time + kr >= 0.0 && time < end then
-    pure
-      $ pannerMono_ (tag <> "_panOscSimpl") 0.0
-          ( gainT_' (tag <> "_gainOscSimpl")
-              ((epwf [ Tuple 0.0 0.0, Tuple 3.0 (0.01), Tuple end 0.0 ]) time)
-              (sinOsc_ (tag <> "_sinOscSimpl") freq)
-          )
+    let
+      (AudioParameter { param, timeOffset }) =
+        ( epwf
+            [ Tuple 0.0 0.0, Tuple 3.0 (0.01), Tuple end 0.0 ]
+        )
+          time
+    in
+      pure
+        $ pannerMono_ (tag <> "_panOscSimpl") 0.0
+            ( gainT_' (tag <> "_gainOscSimpl")
+                (AudioParameter { param: param + (0.005 * sin (0.1 * pi * time)), timeOffset })
+                (sinOsc_ (tag <> "_sinOscSimpl") freq)
+            )
   else
     Nil
 
