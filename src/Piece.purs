@@ -22,8 +22,8 @@ import Math (cos, pi, pow, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, klank, makeBuffersKeepingCache)
 
 iasmEngineInfo =
-  { msBetweenSamples: 90
-  , msBetweenPings: 85
+  { msBetweenSamples: 100
+  , msBetweenPings: 95
   , fastforwardLowerBound: 0.025
   , rewindUpperBound: 2.0
   , initialOffset: 0.5
@@ -355,10 +355,10 @@ playerIn :: Int -> (Number -> PlayerInOpts) -> Number -> List (AudioUnit D2)
 playerIn name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMonoT_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMonoT_ (opts.tag <> "_panIn") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainIn")
               (opts.gain time)
-              ( highpassT_ (opts.tag <> "_hpf")
+              ( highpassT_ (opts.tag <> "_hpfIn")
                   (opts.hpff time)
                   (opts.hpfq time)
                   -- pitch shift adds interesting feel
@@ -442,10 +442,10 @@ playerA :: Int -> (Number -> PlayerAOpts) -> Number -> List (AudioUnit D2)
 playerA name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMonoT_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMonoT_ (opts.tag <> "_panA") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainA")
               (opts.gain time)
-              ( highpassT_ (opts.tag <> "_hpf")
+              ( highpassT_ (opts.tag <> "_hpfA")
                   (opts.hpff time)
                   (opts.hpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerA") name 1.0 0.2)
@@ -493,10 +493,10 @@ aDots os tg =
                     , gain:
                         epwf
                           [ Tuple 0.0 0.0
-                          , Tuple 0.1 aGn
+                          , Tuple 0.12 aGn
                           , case art of
                               A_Normal -> Tuple l 0.0
-                              A_Stacc -> Tuple 0.3 0.0
+                              A_Stacc -> Tuple 0.4 0.0
                           ]
                     , hpff: epwf [ Tuple 0.0 (aCF + (f * aMF)), Tuple l (aCF + (f * aMF)) ]
                     , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
@@ -561,10 +561,10 @@ playerSen :: Int -> (Number -> PlayerSenOpts) -> Number -> List (AudioUnit D2)
 playerSen name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMonoT_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMonoT_ (opts.tag <> "_panSen") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainSen")
               (opts.gain time)
-              ( highpassT_ (opts.tag <> "_hpf")
+              ( highpassT_ (opts.tag <> "_hpfSen")
                   (opts.hpff time)
                   (opts.hpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerSen") name 1.0 opts.offset)
@@ -689,6 +689,10 @@ senArr os =
       <> (senEcho os "SenD" $ fSEI (\i -> 6.0 - i * 0.4 / 0.6) senEchoInfo)
       <> (senSpread os "SenE" $ fSI (\i -> 6.0 + i * 0.5) senInfo)
       <> (senEcho os "SenF" $ fSEI (\i -> 6.0 + i * 0.5) senEchoInfo)
+      <> (senSpread os "SenG" $ fSI (\i -> 11.0 - i * 0.4 / 0.6) senInfo)
+      <> (senEcho os "SenH" $ fSEI (\i -> 11.0 - i * 0.4 / 0.6) senEchoInfo)
+      <> (senSpread os "SenI" $ fSI (\i -> 11.0 + i * 0.6) senInfo)
+      <> (senEcho os "SenJ" $ fSEI (\i -> 11.0 + i * 0.6) senEchoInfo)
   )
 
 -------------------------------
@@ -707,10 +711,10 @@ playerTi :: Int -> (Number -> PlayerTiOpts) -> Number -> List (AudioUnit D2)
 playerTi name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMono_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMono_ (opts.tag <> "_panTi") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainTi")
               (opts.gain time)
-              ( highpassT_ (opts.tag <> "_hpf")
+              ( highpassT_ (opts.tag <> "_hpfTi")
                   (opts.hpff time)
                   (opts.hpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerTi") name 1.0 0.0)
@@ -769,10 +773,10 @@ playerMen :: Int -> (Number -> PlayerMenOpts) -> Number -> List (AudioUnit D2)
 playerMen name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMonoT_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMonoT_ (opts.tag <> "_panMen") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainMen")
               (opts.gain time)
-              ( highpassT_ (opts.tag <> "_hpf")
+              ( highpassT_ (opts.tag <> "_hpfMen")
                   (opts.hpff time)
                   (opts.hpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerMen") name 1.0 opts.offset)
@@ -881,10 +885,10 @@ playerTal :: Int -> (Number -> PlayerTalOpts) -> Number -> List (AudioUnit D2)
 playerTal name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMono_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMono_ (opts.tag <> "_panTal") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainTal")
               (opts.gain time)
-              ( highpassT_ (opts.tag <> "_hpf")
+              ( highpassT_ (opts.tag <> "_hpfTal")
                   (opts.hpff time)
                   (opts.hpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerTal") name 1.0 opts.offset)
@@ -906,7 +910,7 @@ playerTal_ :: Int -> (Number -> PlayerTalOpts) -> Number -> Behavior (AudioUnit 
 playerTal_ name opts time = pure $ speaker (zero :| playerTal name opts time)
 
 peak :: Number → Array (Tuple Number Number)
-peak n = [ Tuple n 0.2, Tuple (n + 0.05) 1.0, Tuple (n + 0.1) 1.0, Tuple (n + 0.15) 0.2 ]
+peak n = [ Tuple n 0.2, Tuple (n + 0.12) 1.0, Tuple (n + 0.23) 1.0, Tuple (n + 0.34) 0.2 ]
 
 talPlayer2 :: Number -> String -> Array (Number → List (AudioUnit D2))
 talPlayer2 os tg =
@@ -951,10 +955,10 @@ playerMood :: String -> Int -> (Number -> PlayerMoodOpts) -> Number -> List (Aud
 playerMood pitch name' opts' time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ pannerMono_ (opts.tag <> "_pan") (opts.pan time)
-          ( gainT_' (opts.tag <> "_gain")
+      $ pannerMono_ (opts.tag <> "_panMood") (opts.pan time)
+          ( gainT_' (opts.tag <> "_gainMood")
               (opts.gain time)
-              ( opts.filt (opts.tag <> "_bpf")
+              ( opts.filt (opts.tag <> "_bpfMood")
                   (opts.bpff time)
                   (opts.bpfq time)
                   (playBufWithOffset_ (opts.tag <> "_playerMood") name 1.0 opts.offset)
@@ -970,7 +974,7 @@ playerMood pitch name' opts' time =
   name = "Mood-" <> pitch <> "-" <> show name' <> "-l"
 
 data MoodInfo
-  = MoodInfo String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) MoodPan
+  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) MoodPan
 
 data MoodPan
   = MoodPan Number Number Number
@@ -986,11 +990,11 @@ lowOs = 1.3 :: Number
 moodPlayer2 :: Number -> String -> Array (Number -> List (AudioUnit D2))
 moodPlayer2 os tg =
   map
-    ( \(MoodInfo pitch x y f filt q gf (MoodPan _a _b _c)) ->
+    ( \(MoodInfo pitch tg x y f filt q gf (MoodPan _a _b _c)) ->
         ( atT (y + os)
             $ playerMood pitch x
                 ( \l ->
-                    { tag: tg <> "mp1" <> pitch <> (show x) <> (show y)
+                    { tag: tg <> "mp1" <> pitch <> (show x) <> tg
                     , pan: (\t -> _a * sin (_b * (t + _c) * pi))
                     , filt
                     , offset: 0.0
@@ -1003,76 +1007,76 @@ moodPlayer2 os tg =
     )
     ( ( map
           ( \i ->
-              MoodInfo "E3" (i `mod` 3) (lowOs + (0.5 * (toNumber i `pow` 1.2)))
+              MoodInfo "E3" (show i) 0 (lowOs + (1.2 * (toNumber i)))
                 100.0 -- (conv440 (-29))
                 bandpassT_
                 4.0
-                (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.2 1.0, Tuple (l - 0.4) 1.0, Tuple (l - 0.25) 0.0 ])
+                (\l -> epwf [ Tuple 0.0 1.0, Tuple l 1.0 ])
                 (MoodPan 0.0 0.2 0.2)
           )
           (range 0 8)
       )
-        <> [ MoodInfo "E4" 0 0.8
+        <> [ MoodInfo "E4" "-" 0 0.8
               300.0 -- (conv440 (-17))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.3 0.2 0.2)
-          , MoodInfo "F#4" 0 1.45
+          , MoodInfo "F#4" "-" 0 1.45
               400.0 -- (conv440 (-15))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.4 0.1 0.35)
-          , MoodInfo "G4" 4 1.15
+          , MoodInfo "G4" "-" 4 1.15
               450.0 --(conv440 (22))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.1 0.5 (-0.7))
-          , MoodInfo "A4" 5 1.3
+          , MoodInfo "A4" "-" 5 1.3
               500.0 --(conv440 (-12))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.05 1.0 0.05)
-          , MoodInfo "B4" 2 1.0
+          , MoodInfo "B4" "-" 2 1.0
               550.0 --(conv440 (14))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.15 0.4 0.0)
-          , MoodInfo "C5" 2 1.6
+          , MoodInfo "C5" "-" 2 1.6
               600.0 --(conv440 (3))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.6 0.6 (-0.8))
-          , MoodInfo "D5" 2 0.4
+          , MoodInfo "D5" "-" 2 0.4
               650.0 -- (conv440 (-7))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
               (MoodPan 0.5 0.75 0.8)
-          , MoodInfo "E5" 0 0.3
+          , MoodInfo "E5" "-" 0 0.3
               700.0 --(conv440 (7))
               bypassFilt
               3.0
               (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
               (MoodPan 0.9 0.15 (-0.2))
-          , MoodInfo "F#5" 0 0.3
+          , MoodInfo "F#5" "-" 0 0.3
               800.0 --(conv440 (9))
               bypassFilt
               2.0
               (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
               (MoodPan 0.3 0.5 0.9)
-          , MoodInfo "G5" 3 0.5
+          , MoodInfo "G5" "-" 3 0.5
               900.0 --(conv440 (10))
               bypassFilt
               2.0
               (\l -> epwf [ Tuple 0.0 0.3, Tuple l 0.3 ])
               (MoodPan 0.4 0.1 (-0.2))
-          , MoodInfo "A5" 2 0.0
+          , MoodInfo "A5" "-" 2 0.0
               1000.0 --(conv440 0)
               bypassFilt
               0.01
