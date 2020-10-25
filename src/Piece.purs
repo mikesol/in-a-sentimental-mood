@@ -564,6 +564,14 @@ aDots os tg =
           , nDotInfo 130 0.9 1.8 (-0.3)
           , nDotInfo 127 0.9 2.0 (-0.4)
           , nDotInfo 127 0.9 2.5 (-0.5)
+          , nDotInfo 129 0.8 3.6 (0.1)
+          , nDotInfo 127 1.0 5.55 (-0.0)
+          , nDotInfo 130 1.0 1.5 0.2
+          , nDotInfo 129 0.9 1.0 (-0.3)
+          , nDotInfo 130 1.0 0.9 (-0.6)
+          , nDotInfo 128 0.9 1.3 (0.3)
+          , nDotInfo 127 0.8 1.7 (0.1)
+          , nDotInfo 129 0.65 2.3 (0.6)
           ]
       )
       .acc
