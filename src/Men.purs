@@ -20,7 +20,7 @@ import Foreign.Object as O
 import Math (pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
 
-sounds =
+soundsMen =
   [ Tuple 95 2.836031746031746
   , Tuple 92 1.4133786848072563
   , Tuple 85 0.8898412698412699
@@ -81,17 +81,20 @@ main =
                         ("Men-E5-" <> s <> "-l")
                         ("Men/E5/" <> s <> ".l.ogg")
                 )
-                sounds
+                soundsMen
             )
         )
     , run = runInBrowser scene
     }
 
-fromSounds :: Int -> Number
-fromSounds i = fromMaybe 0.0 (M.lookup i soundsMap)
+fromSoundsMen :: Int -> Number
+fromSoundsMen i = fromMaybe 0.0 (M.lookup i soundsMenMap)
 
-soundsMap :: M.Map Int Number
-soundsMap = M.fromFoldable sounds
+soundsMenMap :: M.Map Int Number
+soundsMenMap = M.fromFoldable soundsMen
+
+atT :: forall a. Number -> (Number -> a) -> (Number -> a)
+atT t = lcmap (_ - t)
 
 type PlayerMenOpts
   = { tag :: String
@@ -101,9 +104,6 @@ type PlayerMenOpts
     , hpff :: Number -> AudioParameter Number
     , hpfq :: Number -> AudioParameter Number
     }
-
-atT :: forall a. Number -> (Number -> a) -> (Number -> a)
-atT t = lcmap (_ - t)
 
 playerMen :: Int -> (Number -> PlayerMenOpts) -> Number -> List (AudioUnit D2)
 playerMen name' opts' time =
@@ -121,7 +121,7 @@ playerMen name' opts' time =
   else
     Nil
   where
-  len = fromSounds name'
+  len = fromSoundsMen name'
 
   opts = opts' len
 

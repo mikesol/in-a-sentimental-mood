@@ -20,12 +20,18 @@ import Foreign.Object as O
 import Math (cos, pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
 
-sounds =
+soundsTi =
   [ Tuple 84 8.447006802721088
   , Tuple 83 12.203718820861678
   , Tuple 82 11.849886621315193
   ] ::
     Array (Tuple Int Number)
+
+fromSoundsTi :: Int -> Number
+fromSoundsTi i = fromMaybe 0.0 (M.lookup i soundsTiMap)
+
+soundsTiMap :: M.Map Int Number
+soundsTiMap = M.fromFoldable soundsTi
 
 kr = (toNumber defaultEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
@@ -72,17 +78,14 @@ main =
                         ("Ti-D5-" <> s <> "-l")
                         ("Ti/D5/" <> s <> ".l.ogg")
                 )
-                sounds
+                soundsTi
             )
         )
     , run = runInBrowser scene
     }
 
-fromSounds :: Int -> Number
-fromSounds i = fromMaybe 0.0 (M.lookup i soundsMap)
-
-soundsMap :: M.Map Int Number
-soundsMap = M.fromFoldable sounds
+atT :: forall a. Number -> (Number -> a) -> (Number -> a)
+atT t = lcmap (_ - t)
 
 type PlayerTiOpts
   = { tag :: String
@@ -91,9 +94,6 @@ type PlayerTiOpts
     , hpff :: Number -> AudioParameter Number
     , hpfq :: Number -> AudioParameter Number
     }
-
-atT :: forall a. Number -> (Number -> a) -> (Number -> a)
-atT t = lcmap (_ - t)
 
 playerTi :: Int -> (Number -> PlayerTiOpts) -> Number -> List (AudioUnit D2)
 playerTi name' opts' time =
@@ -111,14 +111,11 @@ playerTi name' opts' time =
   else
     Nil
   where
-  len = (fromSounds name')
+  len = (fromSoundsTi name')
 
   opts = opts' len
 
   name = "Ti-D5-" <> show name' <> "-l"
-
-playerTi_ :: Int -> (Number -> PlayerTiOpts) -> Number -> Behavior (AudioUnit D2)
-playerTi_ name opts time = pure $ speaker (zero :| playerTi name opts time)
 
 data TiInfo
   = TiInfo Int (Number -> Number)

@@ -24,7 +24,7 @@ import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBu
 data MoodIdx
   = MoodIdx (Tuple String Int) Number
 
-sounds =
+soundsMood =
   [ MoodIdx (Tuple "E3" 0) 1.8808163265306121
   , MoodIdx (Tuple "E3" 1) 1.689251700680272
   , MoodIdx (Tuple "E3" 2) 1.5615419501133787
@@ -136,17 +136,17 @@ main =
                         ("Mood-" <> pitch <> "-" <> s <> "-l")
                         ("Mood/" <> (replace (Pattern "#") (Replacement "%23") pitch) <> "/" <> s <> ".l.ogg")
                 )
-                sounds
+                soundsMood
             )
         )
     , run = runInBrowser scene
     }
 
-fromSounds :: String -> Int -> Number
-fromSounds s i = fromMaybe 0.0 (M.lookup (s <> "-" <> show i) soundsMap)
+fromSoundsMood :: String -> Int -> Number
+fromSoundsMood s i = fromMaybe 0.0 (M.lookup (s <> "-" <> show i) soundsMoodMap)
 
-soundsMap :: M.Map String Number
-soundsMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> show y) b) sounds)
+soundsMoodMap :: M.Map String Number
+soundsMoodMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> show y) b) soundsMood)
 
 type PlayerMoodOpts
   = { tag :: String
@@ -177,7 +177,7 @@ playerMood pitch name' opts' time =
   else
     Nil
   where
-  len = fromSounds pitch name'
+  len = fromSoundsMood pitch name'
 
   opts = opts' len
 
@@ -191,6 +191,8 @@ data MoodPan
 
 type FiltSig
   = forall ch. Pos ch => String -> AudioParameter Number -> AudioParameter Number -> AudioUnit ch -> AudioUnit ch
+
+lowOs = 1.3 :: Number
 
 moodPlayer2 :: Number -> String -> Array (Number -> List (AudioUnit D2))
 moodPlayer2 os tg =
@@ -210,144 +212,85 @@ moodPlayer2 os tg =
                 )
         )
     )
-    [ MoodInfo "E3" 0 1.1
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 1 1.7
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 2.3
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 2 2.9
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 1 3.5 100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 4.1
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 1 4.7
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 5.3
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 5.9
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 6.5
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 7.1
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E3" 0 7.7
-        100.0 -- (conv440 (-29))
-        bandpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.0 0.2 0.2)
-    , MoodInfo "E4" 0 1.0
-        300.0 -- (conv440 (-17))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.3 0.2 0.2)
-    , MoodInfo "F#4" 0 0.9
-        400.0 -- (conv440 (-15))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.4 0.1 0.35)
-    , MoodInfo "G4" 4 0.8
-        450.0 --(conv440 (22))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.1 0.5 (-0.7))
-    , MoodInfo "A4" 5 0.7
-        500.0 --(conv440 (-12))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.05 1.0 0.05)
-    , MoodInfo "B4" 2 0.6
-        550.0 --(conv440 (14))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.15 0.4 0.0)
-    , MoodInfo "C5" 2 0.5
-        600.0 --(conv440 (3))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.6 0.6 (-0.8))
-    , MoodInfo "D5" 2 0.4
-        650.0 -- (conv440 (-7))
-        allpassT_
-        4.0
-        (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-        (MoodPan 0.5 0.75 0.8)
-    , MoodInfo "E5" 0 0.3
-        700.0 --(conv440 (7))
-        allpassT_
-        3.0
-        (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
-        (MoodPan 0.9 0.15 (-0.2))
-    , MoodInfo "F#5" 0 0.2
-        800.0 --(conv440 (9))
-        allpassT_
-        2.0
-        (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
-        (MoodPan 0.3 0.5 0.9)
-    , MoodInfo "G5" 3 0.1
-        900.0 --(conv440 (10))
-        allpassT_
-        2.0
-        (\l -> epwf [ Tuple 0.0 0.3, Tuple l 0.3 ])
-        (MoodPan 0.4 0.1 (-0.2))
-    , MoodInfo "A5" 2 0.0
-        1000.0 --(conv440 0)
-        allpassT_
-        0.01
-        (\l -> epwf [ Tuple 0.0 1.0, Tuple l 1.0 ])
-        (MoodPan 0.3 0.1 0.5)
-    ]
+    ( ( map
+          ( \i ->
+              MoodInfo "E3" (i `mod` 3) (lowOs + (0.5 * (toNumber i `pow` 1.2)))
+                100.0 -- (conv440 (-29))
+                bandpassT_
+                4.0
+                (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.2 1.0, Tuple (l - 0.4) 1.0, Tuple (l - 0.25) 0.0 ])
+                (MoodPan 0.0 0.2 0.2)
+          )
+          (range 0 8)
+      )
+        <> [ MoodInfo "E4" 0 0.8
+              300.0 -- (conv440 (-17))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.3 0.2 0.2)
+          , MoodInfo "F#4" 0 1.45
+              400.0 -- (conv440 (-15))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.4 0.1 0.35)
+          , MoodInfo "G4" 4 1.15
+              450.0 --(conv440 (22))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.1 0.5 (-0.7))
+          , MoodInfo "A4" 5 1.3
+              500.0 --(conv440 (-12))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.05 1.0 0.05)
+          , MoodInfo "B4" 2 1.0
+              550.0 --(conv440 (14))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.15 0.4 0.0)
+          , MoodInfo "C5" 2 1.6
+              600.0 --(conv440 (3))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.6 0.6 (-0.8))
+          , MoodInfo "D5" 2 0.4
+              650.0 -- (conv440 (-7))
+              allpassT_
+              4.0
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (MoodPan 0.5 0.75 0.8)
+          , MoodInfo "E5" 0 0.3
+              700.0 --(conv440 (7))
+              allpassT_
+              3.0
+              (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
+              (MoodPan 0.9 0.15 (-0.2))
+          , MoodInfo "F#5" 0 0.3
+              800.0 --(conv440 (9))
+              allpassT_
+              2.0
+              (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
+              (MoodPan 0.3 0.5 0.9)
+          , MoodInfo "G5" 3 0.5
+              900.0 --(conv440 (10))
+              allpassT_
+              2.0
+              (\l -> epwf [ Tuple 0.0 0.3, Tuple l 0.3 ])
+              (MoodPan 0.4 0.1 (-0.2))
+          , MoodInfo "A5" 2 0.0
+              1000.0 --(conv440 0)
+              allpassT_
+              0.01
+              (\l -> epwf [ Tuple 0.0 1.0, Tuple 7.0 1.0, Tuple l 0.0 ])
+              (MoodPan 0.3 0.1 0.5)
+          ]
+    )
 
 conv440 :: Int -> Number
 conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))

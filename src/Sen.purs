@@ -20,7 +20,7 @@ import Foreign.Object as O
 import Math (pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
 
-sounds =
+soundsSen =
   [ Tuple 105 1.3107256235827665
   , Tuple 104 1.1829251700680272
   , Tuple 103 1.0809523809523809
@@ -60,6 +60,12 @@ sounds =
   , Tuple 22 5.243310657596372
   ] ::
     Array (Tuple Int Number)
+
+fromSoundsSen :: Int -> Number
+fromSoundsSen i = fromMaybe 0.0 (M.lookup i soundsSenMap)
+
+soundsSenMap :: M.Map Int Number
+soundsSenMap = M.fromFoldable soundsSen
 
 kr = (toNumber defaultEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
@@ -107,17 +113,14 @@ main =
                         ("Sen-B4-" <> s <> "-l")
                         ("Sen/B4/" <> s <> ".l.ogg")
                 )
-                sounds
+                soundsSen
             )
         )
     , run = runInBrowser scene
     }
 
-fromSounds :: Int -> Number
-fromSounds i = fromMaybe 0.0 (M.lookup i soundsMap)
-
-soundsMap :: M.Map Int Number
-soundsMap = M.fromFoldable sounds
+atT :: forall a. Number -> (Number -> a) -> (Number -> a)
+atT t = lcmap (_ - t)
 
 type PlayerSenOpts
   = { tag :: String
@@ -127,9 +130,6 @@ type PlayerSenOpts
     , hpff :: Number -> AudioParameter Number
     , hpfq :: Number -> AudioParameter Number
     }
-
-atT :: forall a. Number -> (Number -> a) -> (Number -> a)
-atT t = lcmap (_ - t)
 
 playerSen :: Int -> (Number -> PlayerSenOpts) -> Number -> List (AudioUnit D2)
 playerSen name' opts' time =
@@ -147,7 +147,7 @@ playerSen name' opts' time =
   else
     Nil
   where
-  len = (fromSounds name')
+  len = (fromSoundsSen name')
 
   opts = opts' len
 
@@ -155,9 +155,6 @@ playerSen name' opts' time =
 
 data SenInfo
   = SenInfo Int Number Number SenDir
-
-playerSen_ :: Int -> (Number -> PlayerSenOpts) -> Number -> Behavior (AudioUnit D2)
-playerSen_ name opts time = pure $ speaker (zero :| playerSen name opts time)
 
 data SenDir
   = SenLeft

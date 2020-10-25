@@ -20,7 +20,7 @@ import Foreign.Object as O
 import Math (pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
 
-sounds =
+soundsTal =
   [ Tuple 43 6.315827664399093
   , Tuple 42 6.362267573696145
   , Tuple 32 2.2058956916099772
@@ -76,17 +76,17 @@ main =
                         ("Tal-G5-" <> s <> "-l")
                         ("Tal/G5/" <> s <> ".l.ogg")
                 )
-                sounds
+                soundsTal
             )
         )
     , run = runInBrowser scene
     }
 
-fromSounds :: Int -> Number
-fromSounds i = fromMaybe 0.0 (M.lookup i soundsMap)
+fromSoundsTalTal :: Int -> Number
+fromSoundsTalTal i = fromMaybe 0.0 (M.lookup i soundsTalMap)
 
-soundsMap :: M.Map Int Number
-soundsMap = M.fromFoldable sounds
+soundsTalMap :: M.Map Int Number
+soundsTalMap = M.fromFoldable soundsTal
 
 type PlayerTalOpts
   = { tag :: String
@@ -116,7 +116,7 @@ playerTal name' opts' time =
   else
     Nil
   where
-  len = fromSounds name'
+  len = fromSoundsTalTal name'
 
   opts = opts' len
 
