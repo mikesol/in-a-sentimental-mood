@@ -1134,9 +1134,9 @@ scene time =
                       , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
                       , atT 11.0 $ oscSimpl "SenOsc" 15.0 (conv440 (-10))
                       , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
-                      , atT 15.0 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
+                      , atT 15.5 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
                       , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
-                      , atT 17.0 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
+                      , atT 18.5 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
                       , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
                       , atT 20.0 $ playerDrone "Indr1" "In-G4-78-l" 1.0
                       , atT 16.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
