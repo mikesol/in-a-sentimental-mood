@@ -15,6 +15,7 @@ import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
+import Debug.Trace (spy)
 import FRP.Behavior (Behavior)
 import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain', gainT', gainT_, gainT_', gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
@@ -44,8 +45,29 @@ fromSoundsFull i = fromMaybe 0.0 (M.lookup i soundsFullMap)
 soundsFullMap :: M.Map String Number
 soundsFullMap = M.fromFoldable soundsFull
 
+soundsHarm =
+  [ Tuple "f-sharp" 8.0
+  , Tuple "c-sharp" 8.0
+  ] ::
+    Array (Tuple String Number)
+
+fromSoundsHarm :: String -> Number
+fromSoundsHarm i = fromMaybe 0.0 (M.lookup i soundsHarmMap)
+
+soundsHarmMap :: M.Map String Number
+soundsHarmMap = M.fromFoldable soundsHarm
+
 soundsLicks =
-  [] ::
+  [ Tuple "onTheWingsOfEveryKiss" 6.060408163265306
+  , Tuple "onTheWingsOfEveryKiss1" 5.944308390022676
+  , Tuple "onTheWingsOfEveryKiss2" 6.8382766439909295
+  , Tuple "onTheWingsOfEveryKiss3" 6.095238095238095
+  , Tuple "onTheWingsOfEveryKiss4" 6.623492063492064
+  , Tuple "onTheWingsOfEveryKiss5" 5.996553287981859
+  , Tuple "onTheWingsOfEveryKiss6" 6.182312925170068
+  , Tuple "onTheWingsOfEveryKiss7" 5.915283446712018
+  , Tuple "onTheWingsOfEveryKiss8" 6.362267573696145
+  ] ::
     Array (Tuple String Number)
 
 fromSoundsLicks :: String -> Number
@@ -144,6 +166,17 @@ main =
                             s = fst i
                           in
                             Tuple
+                              ("Harm-" <> s)
+                              ("Harm/" <> s <> ".ogg")
+                      )
+                      soundsHarm
+                  )
+                <> ( map
+                      ( \i ->
+                          let
+                            s = fst i
+                          in
+                            Tuple
                               ("Licks-" <> s <> "-l")
                               ("Licks/" <> s <> ".l.ogg")
                       )
@@ -223,46 +256,54 @@ playerGuitar tag name tos time =
     else
       Nil
 
-playerHigh :: String -> String -> Number -> Number -> List (AudioUnit D2)
-playerHigh tag name dur time =
-  if time + kr >= 0.0 && time < dur + 0.5 then
-    pure
-      $ gainT_' (tag <> "_gainHigh")
-          ( ( epwf
-                [ Tuple 0.0 1.0
-                , Tuple (dur - 0.25) 1.0
-                , Tuple dur 0.0
-                ]
+playerHarm :: String -> String -> Number -> Number -> List (AudioUnit D2)
+playerHarm tag name hp time =
+  let
+    len = fromMaybe 0.0 (M.lookup name soundsHarmMap)
+  in
+    if time + kr >= 0.0 && time < len then
+      pure
+        $ panner_ (tag <> "_panHarm") 0.0
+            ( gainT_' (tag <> "_gainHarm")
+                ((epwf [ Tuple 0.0 0.5, Tuple 1.0 0.5, Tuple len 0.0 ]) time)
+                ( highpass_ "_highpassHarm" hp 1.0
+                    (playBufWithOffset_ (tag <> "_playerHarm") ("Harm-" <> name) 1.0 0.0)
+                )
             )
-              time
-          )
-          ( highpass_ (tag <> "_hpfHigh")
-              700.0
-              1.0
-              (playBufWithOffset_ (tag <> "_playerHigh") name 1.0 0.0)
-          )
-  else
-    Nil
+    else
+      Nil
 
-playerRhythm :: String -> Number -> (Number -> AudioParameter Number) -> (Number -> List (AudioUnit D2)) -> Number -> List (AudioUnit D2)
-playerRhythm tag len gf aus time =
+playerOtw0 :: String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerOtw0 tag len hpl hpr pan time =
   if time + kr >= 0.0 && time < len then
-    pure (gainT_ (tag <> "_playerRhythm") (gf time) (zero :| (aus time)))
+    pure
+      $ panner_ (tag <> "_panOtw0") (pan)
+          ( gainT_' (tag <> "_gainOtw0")
+              ((epwf [ Tuple 0.0 0.2, Tuple 3.0 0.6, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+              ( highpassT_ (tag <> "_highpassOtw0")
+                  ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
+                  ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                  (playBufWithOffset_ (tag <> "_playerOtw0") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 0.0)
+              )
+          )
   else
     Nil
 
-highBRhythm_ = (foldl (\{ acc, dur } i -> { acc: acc <> [ Tuple (0.0 + dur) 0.1, Tuple ((i / 2.0) + dur) 1.2 ], dur: dur + i }) { acc: [ Tuple 0.0 0.0 ], dur: 0.1 } [ 0.5, 0.5, 0.5, 0.6, 0.7, 0.9, 1.0, 1.2 ]) :: { acc :: Array (Tuple Number Number), dur :: Number }
-
-highBRhythm = (highBRhythm_.acc <> [ Tuple highBRhythm_.dur 0.0 ]) :: Array (Tuple Number Number)
-
-highB :: String -> Number -> List (AudioUnit D2)
-highB tag =
-  playerRhythm
-    (tag <> "ryt_")
-    (highBRhythm_.dur + 1.0)
-    (epwf highBRhythm)
-    ( playerHigh (tag <> "ply_") "Mood-B5-6-l" 5.642448979591837
-    )
+playerOtw1 :: String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerOtw1 tag len hpl hpr pan time =
+  if time + kr >= 0.0 && time < len then
+    pure
+      $ panner_ (tag <> "_panOtw1") (pan)
+          ( gainT_' (tag <> "_gainOtw1")
+              ((epwf [ Tuple 0.0 0.2, Tuple 3.0 0.3, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+              ( highpassT_ (tag <> "_highpassOtw1")
+                  ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
+                  ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                  (playBufWithOffset_ (tag <> "_playerOtw1") ("Licks-onTheWingsOfEveryKiss5-l") 1.0 0.0)
+              )
+          )
+  else
+    Nil
 
 playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerVoice tag name tos time =
@@ -273,7 +314,7 @@ playerVoice tag name tos time =
       pure
         $ panner_ (tag <> "_panVoice") 0.0
             ( gainT_' (tag <> "_gainVoice")
-                ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
                 ( dynamicsCompressor_ "_compressorVoice" (-24.0) (30.0) (7.0) (0.003) (0.25)
                     ( highpass_ "_highpassVoice" 150.0 1.0
                         (playBufWithOffset_ (tag <> "_playerVoice") ("Full-" <> name) 1.0 tos)
@@ -283,10 +324,26 @@ playerVoice tag name tos time =
     else
       Nil
 
+playerKiss :: String -> Number -> Number -> Number -> List (AudioUnit D2)
+playerKiss tag gd hpf time =
+  if time + kr >= 0.0 && time < 5.0 then
+    pure
+      $ panner_ (tag <> "_panKiss") 0.0
+          ( gainT_' (tag <> "_gainKiss")
+              ((epwf [ Tuple 0.0 0.0, Tuple 0.15 0.0, Tuple 0.3 0.4, Tuple 0.5 0.2, Tuple 1.0 0.0 ]) time)
+              ( dynamicsCompressor_ (tag <> "_compressorKiss") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                  ( highpass_ (tag <> "_highpassKiss") hpf 1.0
+                      (playBufWithOffset_ (tag <> "_playerKiss") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 2.5)
+                  )
+              )
+          )
+  else
+    Nil
+
 conv440 :: Int -> Number
 conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
-startAt = 10.0 :: Number
+startAt = 0.0 :: Number
 
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
@@ -298,7 +355,16 @@ scene time =
                     ( [ atT 0.0 $ playerVoice "Voice" "voice" startAt ]
                         <> [ atT 0.0 $ playerGuitar "Guitar" "guitar" startAt ]
                         <> ( map (atT (-1.0 * startAt))
-                              [ atT 12.22 $ highB "hb1", atT 13.20 $ highB "hb2" ]
+                              ( [ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 ]
+                                  <> [ atT 33.2 $ playerHarm "f-sharp0" "f-sharp" 1850.0 ]
+                                  <> [ atT 33.98 $ playerOtw0 "a" 6.182312925170068 900.0 1500.0 (-1.0) ]
+                                  <> [ atT 33.98 $ playerOtw1 "b" 5.996553287981859 900.0 1700.0 (1.0) ]
+                                  <> [ atT 34.45 $ playerOtw1 "c" 5.996553287981859 1200.0 2500.0 (-1.0) ]
+                                  <> [ atT 34.45 $ playerOtw0 "d" 6.182312925170068 1200.0 2500.0 (1.0) ]
+                                  <> [ atT 35.05 $ playerOtw1 "e" 5.996553287981859 1500.0 3000.0 (-1.0) ]
+                                  <> [ atT 35.05 $ playerOtw0 "f" 6.182312925170068 1500.0 3000.0 (1.0) ]
+                                  <> (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 20))
+                              )
                           )
                     )
                 )
