@@ -17,7 +17,7 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
 import Debug.Trace (spy)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain', gainT', gainT_, gainT_', gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain', gainT', gainT_, gainT_', gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
 import Math (cos, pi, pow, sin, abs)
 import Test.QuickCheck.Gen (sample)
@@ -67,6 +67,10 @@ soundsLicks =
   , Tuple "onTheWingsOfEveryKiss6" 6.182312925170068
   , Tuple "onTheWingsOfEveryKiss7" 5.915283446712018
   , Tuple "onTheWingsOfEveryKiss8" 6.362267573696145
+  , Tuple "andSweet0" 3.722176870748299
+  , Tuple "andSweet1" 3.722176870748299
+  , Tuple "andSweet2" 3.722176870748299
+  , Tuple "andSweet3" 3.722176870748299
   ] ::
     Array (Tuple String Number)
 
@@ -100,15 +104,18 @@ fromSoundsLights i = fromMaybe 0.0 (M.lookup i soundsLightsMap)
 soundsLightsMap :: M.Map String Number
 soundsLightsMap = M.fromFoldable soundsLights
 
-soundsBridge1 =
-  [] ::
+soundsBridge =
+  [ Tuple "rose2" 3.0
+  , Tuple "rose3" 3.0
+  , Tuple "rose4" 3.0
+  ] ::
     Array (Tuple String Number)
 
-fromSoundsBridge1 :: String -> Number
-fromSoundsBridge1 i = fromMaybe 0.0 (M.lookup i soundsBridge1Map)
+fromSoundsBridge :: String -> Number
+fromSoundsBridge i = fromMaybe 0.0 (M.lookup i soundsBridgeMap)
 
-soundsBridge1Map :: M.Map String Number
-soundsBridge1Map = M.fromFoldable soundsBridge1
+soundsBridgeMap :: M.Map String Number
+soundsBridgeMap = M.fromFoldable soundsBridge
 
 soundsBridge2 =
   [] ::
@@ -223,10 +230,10 @@ main =
                             s = fst i
                           in
                             Tuple
-                              ("Bridge1-" <> s <> "-l")
-                              ("Bridge1/" <> s <> ".l.ogg")
+                              ("Bridge-" <> s <> "-l")
+                              ("Bridge/" <> s <> ".l.ogg")
                       )
-                      soundsBridge1
+                      soundsBridge
                   )
                 <> ( map
                       ( \i ->
@@ -312,7 +319,7 @@ playerOtw0 :: String -> Number -> Number -> Number -> Number -> Number -> List (
 playerOtw0 tag len hpl hpr pan time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ panner_ (tag <> "_panOtw0") (pan)
+      $ pannerT_ (tag <> "_panOtw0") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
           ( gainT_' (tag <> "_gainOtw0")
               ((epwf [ Tuple 0.0 0.2, Tuple 3.0 0.6, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
               ( highpassT_ (tag <> "_highpassOtw0")
@@ -328,7 +335,7 @@ playerOtw1 :: String -> Number -> Number -> Number -> Number -> Number -> List (
 playerOtw1 tag len hpl hpr pan time =
   if time + kr >= 0.0 && time < len then
     pure
-      $ panner_ (tag <> "_panOtw1") (pan)
+      $ pannerT_ (tag <> "_panOtw1") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
           ( gainT_' (tag <> "_gainOtw1")
               ((epwf [ Tuple 0.0 0.2, Tuple 3.0 0.3, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
               ( highpassT_ (tag <> "_highpassOtw1")
@@ -378,6 +385,44 @@ playerLights tag' name prate hpf vol time =
   else
     Nil
 
+playerRose :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerRose tag' name pan hpf vol time =
+  if time + kr >= 0.0 && time < 4.0 then
+    let
+      tag = tag' <> name
+    in
+      pure
+        $ panner_ (tag <> "_panRose") pan
+            ( gainT_' (tag <> "_gainRose")
+                ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
+                ( dynamicsCompressor_ (tag <> "_compressorRose") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                    ( highpass_ (tag <> "_highpassRose") hpf 1.0
+                        (playBufWithOffset_ (tag <> "_playerRose") (name) 1.0 0.0)
+                    )
+                )
+            )
+  else
+    Nil
+
+playerSAS :: String -> String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerSAS tag' name len pan hpf vol time =
+  if time + kr >= 0.0 && time < len then
+    let
+      tag = tag' <> name
+    in
+      pure
+        $ panner_ (tag <> "_panSAS") pan
+            ( gainT_' (tag <> "_gainSAS")
+                ((epwf [ Tuple 0.0 0.0, Tuple (0.12) vol, Tuple (len - 0.3) vol, Tuple len 0.0 ]) time)
+                ( dynamicsCompressor_ (tag <> "_compressorSAS") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                    ( highpass_ (tag <> "_highpassSAS") hpf 1.0
+                        (playBufWithOffset_ (tag <> "_playerSAS") (name) 1.0 0.0)
+                    )
+                )
+            )
+  else
+    Nil
+
 playerKiss :: String -> Number -> Number -> Number -> List (AudioUnit D2)
 playerKiss tag gd hpf time =
   if time + kr >= 0.0 && time < 5.0 then
@@ -397,7 +442,7 @@ playerKiss tag gd hpf time =
 conv440 :: Int -> Number
 conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
-startAt = 0.0 :: Number
+startAt = 58.0 :: Number
 
 lightsStart = 28.0 :: Number
 
@@ -411,13 +456,9 @@ scene time =
                     ( [ atT 0.0 $ playerVoice "Voice" "voice" startAt ]
                         <> [ atT 0.0 $ playerGuitar "Guitar" "guitar" startAt ]
                         <> ( map (atT (-1.0 * startAt))
-                              ( [ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 0.5 ]
+                              ( {-[ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 0.5 ]
                                   <> [ atT 33.4 $ playerHarm "f-sharp0" "f-sharp" 1850.0 0.3 ]
-                                  -- <> [ atT 33.98 $ playerOtw0 "a" 6.182312925170068 900.0 1500.0 (-1.0) ]
-                                  
                                   <> [ atT 33.98 $ playerOtw1 "b" 5.996553287981859 900.0 1700.0 (1.0) ]
-                                  -- <> [ atT 34.45 $ playerOtw1 "c" 5.996553287981859 1200.0 2500.0 (-1.0) ]
-                                  
                                   <> [ atT 34.45 $ playerOtw0 "d" 6.182312925170068 1200.0 2500.0 (-1.0) ]
                                   <> [ atT 35.05 $ playerOtw1 "e" 5.996553287981859 1500.0 3000.0 (1.0) ]
                                   <> [ atT 35.05 $ playerOtw0 "f" 6.182312925170068 1500.0 3000.0 (-1.0) ]
@@ -426,6 +467,29 @@ scene time =
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.1 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 2.0) * 0.05))) (range 0 3))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.9)) $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))) (range 0 1))
+                                  <> [ atT 46.8 $ playerSAS "drips0" "Licks-andSweet0-l" 3.722176870748299 (-0.5) 1000.0 0.9 ]
+                                  <> [ atT 47.8 $ playerSAS "drips1" "Licks-andSweet1-l" 3.722176870748299 (0.5) 1000.0 0.9 ]
+                                  <> [ atT 48.8 $ playerSAS "drips2" "Licks-andSweet2-l" 3.722176870748299 (-0.5) 1000.0 0.9 ]
+                                  <> [ atT 49.8 $ playerSAS "drips3" "Licks-andSweet3-l" 3.722176870748299 (0.5) 1000.0 0.9 ]-} [ atT 62.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7 ]
+                                  <> [ atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
+                                  <> [ atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7 ]
+                                  <> [ atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.4 ]
+                                  <> [ atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6 ]
+                                  <> [ atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
+                                  <> [ atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.3 ]
+                                  <> [ atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.7 ]
+                                  <> [ atT 66.5 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) 0.6 ]
+                                  <> [ atT 66.9 $ playerRose ("rose6") "Bridge-rose4-l" (0.2) (700.0) 0.7 ]
+                                  <> [ atT 67.2 $ playerRose ("rose7") "Bridge-rose3-l" (-0.2) (1500.0) 0.3 ]
+                                  <> [ atT 67.3 $ playerRose ("rose8") "Bridge-rose2-l" (0.7) (400.0) 0.7 ]
+                                  <> [ atT 70.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7 ]
+                                  <> [ atT 71.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
+                                  <> [ atT 72.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7 ]
+                                  <> [ atT 72.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.4 ]
+                                  <> [ atT 75.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6 ]
+                                  <> [ atT 76.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
+                                  <> [ atT 76.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.3 ]
+                                  <> [ atT 77.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.7 ]
                               )
                           )
                     )
