@@ -416,11 +416,11 @@ scene time =
                                   -- <> [ atT 33.98 $ playerOtw0 "a" 6.182312925170068 900.0 1500.0 (-1.0) ]
                                   
                                   <> [ atT 33.98 $ playerOtw1 "b" 5.996553287981859 900.0 1700.0 (1.0) ]
-                                  --<> [ atT 34.45 $ playerOtw1 "c" 5.996553287981859 1200.0 2500.0 (-1.0) ]
+                                  -- <> [ atT 34.45 $ playerOtw1 "c" 5.996553287981859 1200.0 2500.0 (-1.0) ]
                                   
-                                  <> [ atT 34.45 $ playerOtw0 "d" 6.182312925170068 1200.0 2500.0 (1.0) ]
-                                  <> [ atT 35.05 $ playerOtw1 "e" 5.996553287981859 1500.0 3000.0 (-1.0) ]
-                                  <> [ atT 35.05 $ playerOtw0 "f" 6.182312925170068 1500.0 3000.0 (1.0) ]
+                                  <> [ atT 34.45 $ playerOtw0 "d" 6.182312925170068 1200.0 2500.0 (-1.0) ]
+                                  <> [ atT 35.05 $ playerOtw1 "e" 5.996553287981859 1500.0 3000.0 (1.0) ]
+                                  <> [ atT 35.05 $ playerOtw0 "f" 6.182312925170068 1500.0 3000.0 (-1.0) ]
                                   <> (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 10))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 3.0) * 0.05))) (range 0 5))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
