@@ -1,4 +1,4 @@
-module Klank.IASM.In where
+module Klank.IASM.Piece where
 
 import Prelude
 import Control.Promise (toAffE)
