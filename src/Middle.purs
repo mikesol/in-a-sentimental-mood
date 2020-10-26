@@ -19,7 +19,7 @@ import Debug.Trace (spy)
 import FRP.Behavior (Behavior)
 import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain', gainT', gainT_, gainT_', gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
-import Math (cos, pi, pow, sin)
+import Math (cos, pi, pow, sin, abs)
 import Test.QuickCheck.Gen (sample)
 import Type.Klank.Dev (Buffers, Klank, affable, klank, makeBuffersKeepingCache)
 
@@ -75,6 +75,30 @@ fromSoundsLicks i = fromMaybe 0.0 (M.lookup i soundsLicksMap)
 
 soundsLicksMap :: M.Map String Number
 soundsLicksMap = M.fromFoldable soundsLicks
+
+soundsLights =
+  [ Tuple "b0" 3.0
+  , Tuple "b1" 3.0
+  , Tuple "b2" 3.0
+  , Tuple "b3" 3.0
+  , Tuple "b4" 3.0
+  , Tuple "e0" 3.0
+  , Tuple "e1" 3.0
+  , Tuple "e2" 3.0
+  , Tuple "g0" 3.0
+  , Tuple "g1" 3.0
+  , Tuple "g2" 3.0
+  , Tuple "c0" 3.0
+  , Tuple "c1" 3.0
+  , Tuple "c2" 3.0
+  ] ::
+    Array (Tuple String Number)
+
+fromSoundsLights :: String -> Number
+fromSoundsLights i = fromMaybe 0.0 (M.lookup i soundsLightsMap)
+
+soundsLightsMap :: M.Map String Number
+soundsLightsMap = M.fromFoldable soundsLights
 
 soundsBridge1 =
   [] ::
@@ -188,6 +212,17 @@ main =
                             s = fst i
                           in
                             Tuple
+                              ("Lights-" <> s <> "-l")
+                              ("Lights/" <> s <> ".l.ogg")
+                      )
+                      soundsLights
+                  )
+                <> ( map
+                      ( \i ->
+                          let
+                            s = fst i
+                          in
+                            Tuple
                               ("Bridge1-" <> s <> "-l")
                               ("Bridge1/" <> s <> ".l.ogg")
                       )
@@ -256,8 +291,8 @@ playerGuitar tag name tos time =
     else
       Nil
 
-playerHarm :: String -> String -> Number -> Number -> List (AudioUnit D2)
-playerHarm tag name hp time =
+playerHarm :: String -> String -> Number -> Number -> Number -> List (AudioUnit D2)
+playerHarm tag name hp g time =
   let
     len = fromMaybe 0.0 (M.lookup name soundsHarmMap)
   in
@@ -265,7 +300,7 @@ playerHarm tag name hp time =
       pure
         $ panner_ (tag <> "_panHarm") 0.0
             ( gainT_' (tag <> "_gainHarm")
-                ((epwf [ Tuple 0.0 0.5, Tuple 1.0 0.5, Tuple len 0.0 ]) time)
+                ((epwf [ Tuple 0.0 g, Tuple 1.0 g, Tuple len 0.0 ]) time)
                 ( highpass_ "_highpassHarm" hp 1.0
                     (playBufWithOffset_ (tag <> "_playerHarm") ("Harm-" <> name) 1.0 0.0)
                 )
@@ -324,6 +359,25 @@ playerVoice tag name tos time =
     else
       Nil
 
+playerLights :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerLights tag' name prate hpf vol time =
+  if time + kr >= 0.0 && time < 4.0 then
+    let
+      tag = tag' <> name
+    in
+      pure
+        $ panner_ (tag <> "_panLights") 0.0
+            ( gainT_' (tag <> "_gainLights")
+                ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
+                ( dynamicsCompressor_ (tag <> "_compressorLights") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                    ( highpass_ (tag <> "_highpassLights") hpf 1.0
+                        (playBufWithOffset_ (tag <> "_playerLights") (name) prate 0.0)
+                    )
+                )
+            )
+  else
+    Nil
+
 playerKiss :: String -> Number -> Number -> Number -> List (AudioUnit D2)
 playerKiss tag gd hpf time =
   if time + kr >= 0.0 && time < 5.0 then
@@ -345,6 +399,8 @@ conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
 startAt = 0.0 :: Number
 
+lightsStart = 28.0 :: Number
+
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
   pure
@@ -355,15 +411,21 @@ scene time =
                     ( [ atT 0.0 $ playerVoice "Voice" "voice" startAt ]
                         <> [ atT 0.0 $ playerGuitar "Guitar" "guitar" startAt ]
                         <> ( map (atT (-1.0 * startAt))
-                              ( [ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 ]
-                                  <> [ atT 33.2 $ playerHarm "f-sharp0" "f-sharp" 1850.0 ]
-                                  <> [ atT 33.98 $ playerOtw0 "a" 6.182312925170068 900.0 1500.0 (-1.0) ]
+                              ( [ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 0.5 ]
+                                  <> [ atT 33.4 $ playerHarm "f-sharp0" "f-sharp" 1850.0 0.3 ]
+                                  -- <> [ atT 33.98 $ playerOtw0 "a" 6.182312925170068 900.0 1500.0 (-1.0) ]
+                                  
                                   <> [ atT 33.98 $ playerOtw1 "b" 5.996553287981859 900.0 1700.0 (1.0) ]
-                                  <> [ atT 34.45 $ playerOtw1 "c" 5.996553287981859 1200.0 2500.0 (-1.0) ]
+                                  --<> [ atT 34.45 $ playerOtw1 "c" 5.996553287981859 1200.0 2500.0 (-1.0) ]
+                                  
                                   <> [ atT 34.45 $ playerOtw0 "d" 6.182312925170068 1200.0 2500.0 (1.0) ]
                                   <> [ atT 35.05 $ playerOtw1 "e" 5.996553287981859 1500.0 3000.0 (-1.0) ]
                                   <> [ atT 35.05 $ playerOtw0 "f" 6.182312925170068 1500.0 3000.0 (1.0) ]
-                                  <> (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 20))
+                                  <> (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 10))
+                                  <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 3.0) * 0.05))) (range 0 5))
+                                  <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
+                                  <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.1 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 2.0) * 0.05))) (range 0 3))
+                                  <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.9)) $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))) (range 0 1))
                               )
                           )
                     )
