@@ -1,4 +1,4 @@
-module InASentimentalMood where
+module Klank.IASM.Piece where
 
 import Prelude
 import Control.Promise (toAffE)
@@ -16,7 +16,7 @@ import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpassT_, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, gain, gain', gainT', gainT_', gain_, gain_', highpassT_, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
 import Math (cos, pi, pow, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, klank, makeBuffersKeepingCache)
@@ -1120,38 +1120,39 @@ moodPlayer2 os tg =
 conv440 :: Int -> Number
 conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
--- for Arline Solomon
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
   pure
-    $ speaker
-        ( zero
-            :| fold
-                ( map ((#) time)
-                    ( [ atT 3.0 $ playerDrone "Indr" "In-G4-78-l" 1.0
-                      , atT 7.0 $ oscSimpl "InOsc" 20.0 (conv440 (-14))
-                      , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
-                      , atT 9.0 $ oscSimpl "AOsc" 18.0 (conv440 (-12))
-                      , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
-                      , atT 11.0 $ oscSimpl "SenOsc" 15.0 (conv440 (-10))
-                      , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
-                      , atT 15.5 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
-                      , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
-                      , atT 18.5 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
-                      , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
-                      , atT 20.0 $ playerDrone "Indr1" "In-G4-78-l" 1.0
-                      , atT 16.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
-                      , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
-                      ]
-                        <> (fadeIn 0.0 "In")
-                        <> (aDots 4.0 "A")
-                        <> (senArr 7.0)
-                        <> (tiDots 11.9 "Ti1")
-                        <> (tiDots 20.0 "Ti2")
-                        <> (menPlayer1 16.0 "Men1")
-                        <> (menPlayer2 16.0 "Men2")
-                        <> (talPlayer2 20.0 "Tal2")
-                        <> (moodPlayer2 24.5 "Mood2")
+    $ speaker'
+        ( gain_ "globalGain" 2.0
+            ( zero
+                :| fold
+                    ( map ((#) time)
+                        ( [ atT 3.0 $ playerDrone "Indr" "In-G4-78-l" 1.0
+                          , atT 7.0 $ oscSimpl "InOsc" 20.0 (conv440 (-14))
+                          , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
+                          , atT 9.0 $ oscSimpl "AOsc" 18.0 (conv440 (-12))
+                          , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
+                          , atT 11.0 $ oscSimpl "SenOsc" 15.0 (conv440 (-10))
+                          , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
+                          , atT 15.5 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
+                          , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
+                          , atT 18.5 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
+                          , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
+                          , atT 20.0 $ playerDrone "Indr1" "In-G4-78-l" 1.0
+                          , atT 16.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
+                          , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
+                          ]
+                            <> (fadeIn 0.0 "In")
+                            <> (aDots 4.0 "A")
+                            <> (senArr 7.0)
+                            <> (tiDots 11.9 "Ti1")
+                            <> (tiDots 20.0 "Ti2")
+                            <> (menPlayer1 16.0 "Men1")
+                            <> (menPlayer2 16.0 "Men2")
+                            <> (talPlayer2 20.0 "Tal2")
+                            <> (moodPlayer2 24.5 "Mood2")
+                        )
                     )
-                )
+            )
         )

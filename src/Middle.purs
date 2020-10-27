@@ -354,7 +354,7 @@ playerGuitar tag name tos time =
       pure
         $ panner_ (tag <> "_panGuitar") 0.0
             ( gainT_' (tag <> "_gainGuitar")
-                ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
                 ( highpass_ "_highpassGuitar" 150.0 1.0
                     (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
                 )
@@ -411,7 +411,7 @@ playerOtw0 tag len hpl hpr pan time =
     pure
       $ pannerT_ (tag <> "_panOtw0") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
           ( gainT_' (tag <> "_gainOtw0")
-              ((epwf [ Tuple 0.0 0.2, Tuple 3.0 0.6, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+              ((epwf [ Tuple 0.0 0.3, Tuple 3.0 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
               ( highpassT_ (tag <> "_highpassOtw0")
                   ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
                   ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
@@ -427,7 +427,7 @@ playerOtw1 tag len hpl hpr pan time =
     pure
       $ pannerT_ (tag <> "_panOtw1") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
           ( gainT_' (tag <> "_gainOtw1")
-              ((epwf [ Tuple 0.0 0.2, Tuple 3.0 0.3, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+              ((epwf [ Tuple 0.0 0.3, Tuple 3.0 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
               ( highpassT_ (tag <> "_highpassOtw1")
                   ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
                   ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
@@ -555,7 +555,9 @@ conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
 startAt = 0.0 :: Number
 
-lightsStart = 27.3 :: Number
+lightsStart = 28.0 :: Number
+
+roseMult = 1.2 :: Number
 
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
@@ -571,12 +573,13 @@ scene time =
                                   <> [ atT 33.4 $ playerHarm "f-sharp0" "f-sharp" 1850.0 0.3 ]
                                   -- <> [ atT 32.88 $ playerOtw1 "b" 5.996553287981859 900.0 1700.0 (1.0) ]
                                   
+                                  <> [ atT 33.78 $ playerOtw0 "c" 6.182312925170068 1200.0 2500.0 (1.0) ]
                                   <> [ atT 34.18 $ playerOtw0 "d" 6.182312925170068 1200.0 2500.0 (-1.0) ]
                                   <> [ atT 34.45 $ playerOtw1 "e" 5.996553287981859 1500.0 3000.0 (1.0) ]
                                   <> [ atT 35.05 $ playerOtw0 "f" 6.182312925170068 1500.0 3000.0 (-1.0) ]
-                                  <> (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 8))
+                                  <> (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 5))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 4.0) * 0.05))) (range 0 6))
-                                  <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.1 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
+                                  <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))) (range 0 3))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.2 + (nf * 0.9)) $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))) (range 0 1))
                                   <> [ atT 46.8 $ playerSAS "drips0" "Licks-andSweet0-l" 3.722176870748299 (-0.5) 1500.0 1.0
@@ -584,16 +587,17 @@ scene time =
                                     , atT 48.6 $ playerSAS "drips1" "Licks-andSweet1-l" 3.722176870748299 (0.5) 1500.0 1.0
                                     , atT 48.8 $ playerSAS "drips1x" "Licks-andSweet2-l" 3.722176870748299 (-0.5) 1500.0 1.0
                                     ]
-                                  <> [ atT 62.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.5
-                                    , atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.55
-                                    , atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.6
-                                    , atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.45
-                                    , atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) 0.5
-                                    , atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.6
-                                    , atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
-                                    , atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.55
-                                    , atT 66.5 $ playerRose ("rose42") "Bridge-rose2-l" (-0.7) (1000.0) 0.6
-                                    , atT 66.9 $ playerRose ("rose531") "Bridge-rose4-l" (0.2) (900.0) 0.7
+                                  <> [ atT 62.5 $ playerRose ("rose0") "Bridge-rose3-l" 0.7 (2000.0) (0.7 * roseMult)
+                                    , atT 62.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) (0.7 * roseMult)
+                                    , atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) (0.7 * roseMult)
+                                    , atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
+                                    , atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+                                    , atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+                                    , atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) (0.7 * roseMult)
+                                    , atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
+                                    , atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+                                    , atT 66.5 $ playerRose ("rose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+                                    , atT 66.9 $ playerRose ("rose531") "Bridge-rose4-l" (0.2) (900.0) (0.7 * roseMult)
                                     -------------------------
                                     -- , atT 68.95 $ playerRose ("seem1") "Bridge-rose2-l" 0.7 (1000.0) (0.6)
                                     , atT 70.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
