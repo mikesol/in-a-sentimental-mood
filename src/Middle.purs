@@ -108,6 +108,14 @@ soundsBridge =
   [ Tuple "rose2" 3.0
   , Tuple "rose3" 3.0
   , Tuple "rose4" 3.0
+  , Tuple "seem" 3.0
+  , Tuple "seem1" 3.0
+  , Tuple "seem2" 3.0
+  , Tuple "seem4" 3.0
+  , Tuple "seem-A" 3.0
+  , Tuple "seemToFall-AesGesF" 3.0
+  , Tuple "seemToFall-AGFis" 3.0
+  , Tuple "seemToFall-DCBb" 3.0
   ] ::
     Array (Tuple String Number)
 
@@ -470,26 +478,41 @@ scene time =
                                   <> [ atT 46.8 $ playerSAS "drips0" "Licks-andSweet0-l" 3.722176870748299 (-0.5) 1000.0 0.9 ]
                                   <> [ atT 47.8 $ playerSAS "drips1" "Licks-andSweet1-l" 3.722176870748299 (0.5) 1000.0 0.9 ]
                                   <> [ atT 48.8 $ playerSAS "drips2" "Licks-andSweet2-l" 3.722176870748299 (-0.5) 1000.0 0.9 ]
-                                  <> [ atT 49.8 $ playerSAS "drips3" "Licks-andSweet3-l" 3.722176870748299 (0.5) 1000.0 0.9 ]-} [ atT 62.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7 ]
-                                  <> [ atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
-                                  <> [ atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7 ]
-                                  <> [ atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.4 ]
-                                  <> [ atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6 ]
-                                  <> [ atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
-                                  <> [ atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.3 ]
-                                  <> [ atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.7 ]
-                                  <> [ atT 66.5 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) 0.6 ]
-                                  <> [ atT 66.9 $ playerRose ("rose6") "Bridge-rose4-l" (0.2) (700.0) 0.7 ]
-                                  <> [ atT 67.2 $ playerRose ("rose7") "Bridge-rose3-l" (-0.2) (1500.0) 0.3 ]
-                                  <> [ atT 67.3 $ playerRose ("rose8") "Bridge-rose2-l" (0.7) (400.0) 0.7 ]
-                                  <> [ atT 70.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7 ]
-                                  <> [ atT 71.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
-                                  <> [ atT 72.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7 ]
-                                  <> [ atT 72.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.4 ]
-                                  <> [ atT 75.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6 ]
-                                  <> [ atT 76.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.7 ]
-                                  <> [ atT 76.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.3 ]
-                                  <> [ atT 77.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.7 ]
+                                  <> [ atT 49.8 $ playerSAS "drips3" "Licks-andSweet3-l" 3.722176870748299 (0.5) 1000.0 0.9 ]-} [ atT 62.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
+                                , atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.1
+                                , atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.2
+                                , atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.25
+                                , atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.3
+                                , atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.4
+                                , atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.3
+                                , atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.5
+                                , atT 66.5 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) 0.6
+                                , atT 66.9 $ playerRose ("rose6") "Bridge-rose4-l" (0.2) (700.0) 0.7
+                                , atT 67.2 $ playerRose ("rose7") "Bridge-rose3-l" (-0.2) (1500.0) 0.3
+                                , atT 67.3 $ playerRose ("rose8") "Bridge-rose2-l" (0.7) (400.0) 0.7
+                                , atT 69.5 $ playerRose ("seem1") "Bridge-rose2-l" 0.7 (1000.0) (0.6)
+                                , atT 70.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
+                                , atT 71.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.7
+                                , atT 72.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
+                                , atT 72.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.4
+                                , atT 75.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6
+                                , atT 76.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.7
+                                , atT 76.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.3
+                                , atT 77.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.7
+                                ]
+                                  -------------- seem
+                                  
+                                  <> [ atT 69.5 $ playerRose ("seem1") "Bridge-seem1-l" 0.0 (1000.0) 0.5
+                                    , atT 71.2 $ playerRose ("seem2") "Bridge-seem-l" (-0.7) (1700.0) (0.4)
+                                    , atT 72.0 $ playerRose ("seem3") "Bridge-seem2-l" (0.8) (1500.0) 0.6
+                                    , atT 73.5 $ playerRose ("seem4") "Bridge-seem4-l" (-0.8) (900.0) (0.7)
+                                    , atT 74.1 $ playerRose ("seem5") "Bridge-seem1-l" 0.6 (1000.0) 0.6
+                                    , atT 75.0 $ playerRose ("seem6") "Bridge-seem-l" (-0.4) (1500.0) (0.4)
+                                    -------------- seemToFall
+                                    , atT 75.0 $ playerRose ("seemToFall-AesGesF") "Bridge-seemToFall-AesGesF-l" 0.35 (2100.0) (0.4)
+                                    , atT 75.7 $ playerRose ("seemToFall-DCBb") "Bridge-seemToFall-DCBb-l" (-0.15) (400.0) (0.3)
+                                    , atT 76.2 $ playerRose ("seemToFall-AesGesF") "Bridge-seemToFall-AGFis-l" 0.5 (2300.0) (0.25)
+                                    ]
                               )
                           )
                     )
