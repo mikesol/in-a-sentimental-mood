@@ -82,6 +82,7 @@ soundsLicks =
   , Tuple "onTheWingsOfEveryKiss6" 6.182312925170068
   , Tuple "onTheWingsOfEveryKiss7" 5.915283446712018
   , Tuple "onTheWingsOfEveryKiss8" 6.362267573696145
+  , Tuple "dripsAMelodySoStrangeAndSweet" 6.582857142857143
   , Tuple "guitarFill" 11.6
   , Tuple "andSweet0" 3.722176870748299
   , Tuple "andSweet1" 3.722176870748299
@@ -171,6 +172,7 @@ soundsBridge2 =
   , Tuple "divineA-Fis" 2.1884807256235828
   , Tuple "vivivi" 3.6687528344671203
   , Tuple "vivivi1" 5.38702947845805
+  , Tuple "myHeartsALighterThingSinceYouMadeThisNightAThingDivine" 10.727619047619047
   ] ::
     Array (Tuple String Number)
 
@@ -411,7 +413,7 @@ playerOtw0 tag len hpl hpr pan time =
     pure
       $ pannerT_ (tag <> "_panOtw0") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
           ( gainT_' (tag <> "_gainOtw0")
-              ((epwf [ Tuple 0.0 0.3, Tuple 3.0 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+              ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.0, Tuple 4.5 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
               ( highpassT_ (tag <> "_highpassOtw0")
                   ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
                   ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
@@ -534,6 +536,25 @@ playerSAS tag' name len pan hpf vol time =
   else
     Nil
 
+playerDrips :: String -> String -> Number -> Number -> Number -> List (AudioUnit D2)
+playerDrips tag' name len hpf time =
+  if time + kr >= 0.0 && time < len then
+    let
+      tag = tag' <> name
+    in
+      pure
+        $ pannerT_ (tag <> "_panDrips") ((epwf [ Tuple 0.0 0.2, Tuple 2.0 (-0.5), Tuple len 0.5 ]) time)
+            ( gainT_' (tag <> "_gainDrips")
+                ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.55, Tuple 2.0 0.3, Tuple 3.0 0.6, Tuple 4.5 0.0 ]) time)
+                ( dynamicsCompressor_ (tag <> "_compressorDrips") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                    ( highpass_ (tag <> "_highpassDrips") hpf 1.0
+                        (playBufWithOffset_ (tag <> "_playerDrips") (name) 1.0 0.0)
+                    )
+                )
+            )
+  else
+    Nil
+
 playerKiss :: String -> Number -> Number -> Number -> List (AudioUnit D2)
 playerKiss tag gd hpf time =
   if time + kr >= 0.0 && time < 5.0 then
@@ -582,7 +603,10 @@ scene time =
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))) (range 0 3))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.2 + (nf * 0.9)) $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))) (range 0 1))
-                                  <> [ atT 46.8 $ playerSAS "drips0" "Licks-andSweet0-l" 3.722176870748299 (-0.5) 1500.0 1.0
+                                  <> [ atT 45.0 $ playerDrips "dripsF0" "Licks-onTheWingsOfEveryKiss2-l" 8.582857142857143 1600.0
+                                    , atT 45.9 $ playerDrips "dripsF0" "Licks-onTheWingsOfEveryKiss3-l" 8.582857142857143 1800.0
+                                    , atT 46.8 $ playerSAS "drips0" "Licks-andSweet0-l" 3.722176870748299 (-0.5) 1500.0 1.0
+                                    , atT 46.8 $ playerDrips "dripsF1" "Licks-onTheWingsOfEveryKiss3-l" 8.582857142857143 1600.0
                                     , atT 47.0 $ playerSAS "drips0x" "Licks-andSweet2-l" 3.722176870748299 (0.5) 1500.0 1.0
                                     , atT 48.6 $ playerSAS "drips1" "Licks-andSweet1-l" 3.722176870748299 (0.5) 1500.0 1.0
                                     , atT 48.8 $ playerSAS "drips1x" "Licks-andSweet2-l" 3.722176870748299 (-0.5) 1500.0 1.0
@@ -597,7 +621,10 @@ scene time =
                                     , atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
                                     , atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
                                     , atT 66.5 $ playerRose ("rose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                    , atT 66.9 $ playerRose ("rose531") "Bridge-rose4-l" (0.2) (900.0) (0.7 * roseMult)
+                                    , atT 66.9 $ playerRose ("rose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+                                    , atT 67.3 $ playerRose ("rose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+                                    , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+                                    , atT 67.9 $ playerRose ("rose13") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
                                     -------------------------
                                     -- , atT 68.95 $ playerRose ("seem1") "Bridge-rose2-l" 0.7 (1000.0) (0.6)
                                     , atT 70.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
@@ -652,7 +679,11 @@ scene time =
                                     , atT 93.1 $ playerRose ("dididi6") "Bridge2-dididiA-l" (0.4) (500.0) (0.95)
                                     , atT 93.5 $ playerRose ("dididi7") "Bridge2-dididi-l" (-0.4) (700.0) (0.95)
                                     , atT 93.9 $ playerRose ("dididi8") "Bridge2-dididiA-l" (0.2) (1000.0) (0.95)
-                                    ] -- guitar fill
+                                    ]
+                                  -- <> [ atT 89.3 $ playerSAS "drips0" "Bridge2-myHeartsALighterThingSinceYouMadeThisNightAThingDivine-l" 11.0 (-0.0) 1500.0 1.0]
+                                  
+                                  -- guitar fill
+                                  
                                   <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
                                   <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
                               )

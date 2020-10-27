@@ -207,6 +207,10 @@ soundsMood =
   , MoodIdx (Tuple "A5" 1) 6.826666666666667
   , MoodIdx (Tuple "A5" 2) 17.925804988662133
   , MoodIdx (Tuple "A5" 3) 15.696689342403628
+  , MoodIdx (Tuple "B5" 0) 2.3858503401360545
+  , MoodIdx (Tuple "B5" 1) 3.465578231292517
+  , MoodIdx (Tuple "B5" 2) 3.4771882086167802
+  , MoodIdx (Tuple "B5" 3) 3.6048979591836736
   ] ::
     Array MoodIdx
 

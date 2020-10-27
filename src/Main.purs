@@ -14,7 +14,7 @@ inBase :: Array (Tuple String Int)
 inBase =
   join
     ( map (\s -> [ Tuple s 0, Tuple s 1, Tuple s 2, Tuple s 3 ])
-        [ "E3", "B3", "E4", "F#4", "G4", "A4", "B4", "C5", "C#5", "D5", "D#5", "E5", "F#5", "G5", "A5"
+        [ "E3", "B3", "E4", "F#4", "G4", "A4", "B4", "C5", "C#5", "D5", "D#5", "E5", "F#5", "G5", "A5", "B5"
         ]
     )
 
