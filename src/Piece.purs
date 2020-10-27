@@ -1,4 +1,4 @@
-module Klank.IASM.Piece where
+module InASentimentalMood where
 
 import Prelude
 import Control.Promise (toAffE)
@@ -1120,6 +1120,7 @@ moodPlayer2 os tg =
 conv440 :: Int -> Number
 conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
 
+-- for Arline Solomon
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
   pure
