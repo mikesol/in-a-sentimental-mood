@@ -1,9 +1,11 @@
 module Main where
 
 import Prelude
+import Data.Array (filter)
 import Data.Foldable (for_)
 import Data.Map as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String (Pattern(..), indexOf)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Class.Console (log)
@@ -19,4 +21,4 @@ inBase =
     )
 
 main :: Effect Unit
-main = for_ inBase \i → log $ ("MoodIdx " <> show i <> " " <> show (fromMaybe (-1.0) $ M.lookup ("Mood-" <> fst i <> "-" <> (show $ snd i)) infoMap) <> ",")
+main = for_ ((filter (\(Tuple s n) -> (indexOf (Pattern "Ramp-") s /= Nothing) && (indexOf (Pattern "-l") s == Nothing) && (indexOf (Pattern "-r") s == Nothing)) (M.toUnfoldable infoMap)) :: Array (Tuple String Number)) (\i → log $ (show i <> ","))

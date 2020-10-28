@@ -357,7 +357,7 @@ playerGuitar tag name tos time =
         $ panner_ (tag <> "_panGuitar") 0.0
             ( gainT_' (tag <> "_gainGuitar")
                 ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
-                ( highpass_ "_highpassGuitar" 150.0 1.0
+                ( highpass_ (tag <> "_highpassGuitar") 150.0 1.0
                     (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
                 )
             )
@@ -371,7 +371,7 @@ playerGuitar2 tag time =
       $ panner_ (tag <> "_panGuitar2") 0.0
           ( gainT_' (tag <> "_gainGuitar2")
               ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 15.0 1.0 ]) time)
-              ( highpass_ "_highpassGuitar2" 150.0 1.0
+              ( highpass_ (tag <> "_highpassGuitar2") 150.0 1.0
                   (playBuf_ (tag <> "_playerGuitar2") ("Licks-guitarFill-l") 1.0)
               )
           )
@@ -400,7 +400,7 @@ playerHarm tag name hp g time =
         $ panner_ (tag <> "_panHarm") 0.0
             ( gainT_' (tag <> "_gainHarm")
                 ((epwf [ Tuple 0.0 g, Tuple 1.0 g, Tuple len 0.0 ]) time)
-                ( highpass_ "_highpassHarm" hp 1.0
+                ( highpass_ (tag <> "_highpassHarm") hp 1.0
                     (playBufWithOffset_ (tag <> "_playerHarm") ("Harm-" <> name) 1.0 0.0)
                 )
             )
@@ -449,8 +449,8 @@ playerVoice tag name tos time =
         $ panner_ (tag <> "_panVoice") 0.0
             ( gainT_' (tag <> "_gainVoice")
                 ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
-                ( dynamicsCompressor_ "_compressorVoice" (-24.0) (30.0) (7.0) (0.003) (0.25)
-                    ( highpass_ "_highpassVoice" 150.0 1.0
+                ( dynamicsCompressor_ (tag <> "_compressorVoice") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                    ( highpass_ (tag <> "_highpassVoice") 150.0 1.0
                         (playBufWithOffset_ (tag <> "_playerVoice") ("Full-" <> name) 1.0 tos)
                     )
                 )
