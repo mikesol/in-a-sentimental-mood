@@ -97,6 +97,20 @@ fromSoundsLicks i = fromMaybe 0.0 (M.lookup i soundsLicksMap)
 soundsLicksMap :: M.Map String Number
 soundsLicksMap = M.fromFoldable soundsLicks
 
+soundsEnd =
+  [ Tuple "endVoice2" 30.0
+  , Tuple "endGuitar2" 30.0
+  , Tuple "outroOrgan" 30.0
+  , Tuple "inASentimentalMood" 10.0
+  ] ::
+    Array (Tuple String Number)
+
+fromSoundsEnd :: String -> Number
+fromSoundsEnd i = fromMaybe 0.0 (M.lookup i soundsEndMap)
+
+soundsEndMap :: M.Map String Number
+soundsEndMap = M.fromFoldable soundsEnd
+
 soundsLights =
   [ Tuple "b0" 3.0
   , Tuple "b1" 3.0
@@ -130,19 +144,8 @@ soundsBridge =
   , Tuple "seem2" 3.0
   , Tuple "seem4" 3.0
   , Tuple "seem-A" 3.0
-  , Tuple "seemToFall-AesGesF" 3.0
-  , Tuple "seemToFall-AGFis" 3.0
-  , Tuple "seemToFall-DCBb" 3.0
-  , Tuple "rosePetalsSeemToFall-Slow-Glitch" 7.877369614512472
-  , Tuple "rosePetalsSeemToFall-Vapid-Glitch" 5.7759637188208615
-  , Tuple "rosePetalsSeemToFall-Happy-Glitch" 5.0213151927437645
-  , Tuple "rosePetalsSeemToFall-Happier-Glitch" 5.189659863945578
-  , Tuple "rosePetalsSeemToFall-GM" 4.138956916099773
   , Tuple "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" 10.745034013605443
   , Tuple "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine1" 9.804625850340136
-  --  , Tuple "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine2" 10.379319727891156
-  --  , Tuple "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine3" 11.186213151927438
-  --  , Tuple "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine4" 11.400997732426303
   ] ::
     Array (Tuple String Number)
 
@@ -313,6 +316,17 @@ main =
                       soundsBridge2
                   )
                 <> ( map
+                      ( \i ->
+                          let
+                            s = fst i
+                          in
+                            Tuple
+                              ("End-" <> s)
+                              ("End/" <> s <> ".ogg")
+                      )
+                      soundsEnd
+                  )
+                <> ( map
                       ( \(MoodIdx (Tuple pitch n) _) ->
                           let
                             s = show n
@@ -439,6 +453,9 @@ playerOtw1 tag len hpl hpr pan time =
   else
     Nil
 
+vocalCompressor :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
+vocalCompressor tag = dynamicsCompressor_ tag (-24.0) (30.0) (7.0) (0.003) (0.25)
+
 playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerVoice tag name tos time =
   let
@@ -449,9 +466,28 @@ playerVoice tag name tos time =
         $ panner_ (tag <> "_panVoice") 0.0
             ( gainT_' (tag <> "_gainVoice")
                 ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
-                ( dynamicsCompressor_ (tag <> "_compressorVoice") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                ( vocalCompressor (tag <> "_compressorVoice")
                     ( highpass_ (tag <> "_highpassVoice") 150.0 1.0
                         (playBufWithOffset_ (tag <> "_playerVoice") ("Full-" <> name) 1.0 tos)
+                    )
+                )
+            )
+    else
+      Nil
+
+playerVoiceEnd :: Number -> List (AudioUnit D2)
+playerVoiceEnd time =
+  let
+    len = fromMaybe 0.0 (M.lookup "endVoice2" soundsEndMap)
+  in
+    if time + kr >= 0.0 && time < (len + 1.0) then
+      pure
+        $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
+            ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
+                ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
+                    ( highpass_ ("endVoice2" <> "_highpassVoiceEnd") 150.0 1.0
+                        (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
                     )
                 )
             )
@@ -468,7 +504,7 @@ playerLights tag' name prate hpf vol time =
         $ panner_ (tag <> "_panLights") 0.0
             ( gainT_' (tag <> "_gainLights")
                 ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
-                ( dynamicsCompressor_ (tag <> "_compressorLights") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                ( vocalCompressor (tag <> "_compressorLights")
                     ( highpass_ (tag <> "_highpassLights") hpf 1.0
                         (playBufWithOffset_ (tag <> "_playerLights") (name) prate 0.0)
                     )
@@ -487,7 +523,7 @@ playerRose tag' name pan hpf vol time =
         $ panner_ (tag <> "_panRose") pan
             ( gainT_' (tag <> "_gainRose")
                 ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
-                ( dynamicsCompressor_ (tag <> "_compressorRose") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                ( vocalCompressor (tag <> "_compressorRose")
                     ( highpass_ (tag <> "_highpassRose") hpf 1.0
                         (playBufWithOffset_ (tag <> "_playerRose") (name) 1.0 0.0)
                     )
@@ -506,7 +542,7 @@ playerRoseLong tag' name pan hpf vol time =
         $ panner_ (tag <> "_panRoseLong") pan
             ( gainT_' (tag <> "_gainRoseLong")
                 ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 4.7 vol, Tuple 7.8 0.0, Tuple len 0.0 ]) time)
-                ( dynamicsCompressor_ (tag <> "_compressorRoseLong") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                ( vocalCompressor (tag <> "_compressorRoseLong")
                     ( highpass_ (tag <> "_highpassRoseLong") hpf 1.0
                         (playBufWithOffset_ (tag <> "_playerRoseLong") ("Bridge-" <> name <> "-l") 1.0 0.0)
                     )
@@ -527,7 +563,7 @@ playerSAS tag' name len pan hpf vol time =
         $ panner_ (tag <> "_panSAS") pan
             ( gainT_' (tag <> "_gainSAS")
                 ((epwf [ Tuple 0.0 0.0, Tuple (0.12) vol, Tuple (len - 0.3) vol, Tuple len 0.0 ]) time)
-                ( dynamicsCompressor_ (tag <> "_compressorSAS") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                ( vocalCompressor (tag <> "_compressorSAS")
                     ( highpass_ (tag <> "_highpassSAS") hpf 1.0
                         (playBufWithOffset_ (tag <> "_playerSAS") (name) 1.0 0.0)
                     )
@@ -546,7 +582,7 @@ playerDrips tag' name len hpf time =
         $ pannerT_ (tag <> "_panDrips") ((epwf [ Tuple 0.0 0.2, Tuple 2.0 (-0.5), Tuple len 0.5 ]) time)
             ( gainT_' (tag <> "_gainDrips")
                 ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.55, Tuple 2.0 0.3, Tuple 3.0 0.6, Tuple 4.5 0.0 ]) time)
-                ( dynamicsCompressor_ (tag <> "_compressorDrips") (-24.0) (30.0) (7.0) (0.003) (0.25)
+                ( vocalCompressor (tag <> "_compressorDrips")
                     ( highpass_ (tag <> "_highpassDrips") hpf 1.0
                         (playBufWithOffset_ (tag <> "_playerDrips") (name) 1.0 0.0)
                     )
@@ -562,7 +598,7 @@ playerKiss tag gd hpf time =
       $ panner_ (tag <> "_panKiss") 0.0
           ( gainT_' (tag <> "_gainKiss")
               ((epwf [ Tuple 0.0 0.0, Tuple 0.15 0.0, Tuple 0.3 0.4, Tuple 0.5 0.2, Tuple 1.0 0.0 ]) time)
-              ( dynamicsCompressor_ (tag <> "_compressorKiss") (-24.0) (30.0) (7.0) (0.003) (0.25)
+              ( vocalCompressor (tag <> "_compressorKiss")
                   ( highpass_ (tag <> "_highpassKiss") hpf 1.0
                       (playBufWithOffset_ (tag <> "_playerKiss") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 2.5)
                   )
