@@ -4,15 +4,15 @@
 -- duration :: 4m30s
 -------------------------------
 ---------- README -------------
--- this piece is arranged on klank.dev
--- using purescript-audio-behaviors (https://github.com/mikesol/purescript-audio-behaviors)
--- to see how the arrangement is put together, start from the function `scene` on line 2354
--- the arrangement is a series of events. any event can be commented out to mute
--- and moved in time by changing the first argument to `atT`
--- the arrangement is also on github at https://github.com/mikesol/in-a-sentimental-mood
--- if you have any questions about how to change this arrangement or how to use parts of it
--- in your own work, please ask on https://discourse.klank.dev
--- thanks for listening!
+-- This piece is arranged on klank.dev using purescript-audio-behaviors
+--   at https://github.com/mikesol/purescript-audio-behaviors.
+-- To see how the arrangement is put together, start from the function `scene` on line 2354.
+-- The arrangement is a series of events. any event can be commented out to mute
+--   and moved in time by changing the first argument to `atT`.
+-- The arrangement is also on github at https://github.com/mikesol/in-a-sentimental-mood
+-- If you have any questions about how to change this arrangement or how to use parts of it
+--   in your own work, please ask on https://discourse.klank.dev.
+-- Thanks for listening!
 module Klank.IASM.Piece where
 
 import Prelude
@@ -2341,7 +2341,7 @@ cascadesWithInfoInTime =
 
 startAt = 24.0 :: Number
 
-eos = 2.5 :: Number
+eos = 1.93 :: Number
 
 lightsStart = 27.5 :: Number
 
@@ -2472,11 +2472,11 @@ scene time =
                                                     , atT 68.4 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.4 * roseMult)
                                                     , atT 68.6 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.3 * roseMult)
                                                     , atT 68.9 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.25 * roseMult)
-                                                    , atT 69.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.25 * roseMult)
-                                                    , atT 69.17 $ playerRose ("zxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                    , atT 69.23 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.2 * roseMult)
-                                                    , atT 70.33 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.2 * roseMult)
-                                                    , atT 70.42 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.15 * roseMult)
+                                                    , atT 69.1 $ playerRose ("bzxrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.25 * roseMult)
+                                                    , atT 69.17 $ playerRose ("zbxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+                                                    , atT 69.23 $ playerRose ("bzxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.2 * roseMult)
+                                                    , atT 70.33 $ playerRose ("bzrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.2 * roseMult)
+                                                    , atT 70.42 $ playerRose ("bzxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.15 * roseMult)
                                                     -----------------------------
                                                     ]
                                                 )
