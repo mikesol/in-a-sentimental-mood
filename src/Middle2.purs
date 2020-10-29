@@ -376,9 +376,7 @@ playerGuitar tag name tos time =
             $ panner_ (tag <> "_panGuitar") 0.0
                 ( gainT_' (tag <> "_gainGuitar")
                     ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
-                    ( highpass_ (tag <> "_highpassGuitar") 150.0 1.0
-                        (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
-                    )
+                    (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
                 )
       )
 
@@ -390,12 +388,25 @@ playerGuitarEnd time =
     boundPlayer (len + 1.0) time
       ( defer \_ ->
           pure
-            $ panner_ ("guitarEnd" <> "_panGuitar") 0.0
-                ( gainT_' ("guitarEnd" <> "_gainGuitar")
+            $ panner_ ("guitarEnd" <> "_panGuitarEnd") 0.0
+                ( gainT_' ("guitarEnd" <> "_panGuitarEnd")
                     ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
-                    ( highpass_ ("guitarEnd" <> "_highpassGuitar") 150.0 1.0
-                        (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
-                    )
+                    (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
+                )
+      )
+
+playerOrganOutro :: Number -> List (AudioUnit D2)
+playerOrganOutro time =
+  let
+    len = fromMaybe 0.0 (M.lookup "organOutro" soundsEndMap)
+  in
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ ("guitarEnd" <> "-organOutro") 0.0
+                ( gainT_' ("guitarEnd" <> "-organOutro")
+                    ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
+                    (playBufWithOffset_ ("organOutro" <> "_playerGuitar") ("End-organOutro") 1.0 0.0)
                 )
       )
 
@@ -407,9 +418,7 @@ playerGuitar2 tag time =
           $ panner_ (tag <> "_panGuitar2") 0.0
               ( gainT_' (tag <> "_gainGuitar2")
                   ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 15.0 1.0 ]) time)
-                  ( highpass_ (tag <> "_highpassGuitar2") 150.0 1.0
-                      (playBuf_ (tag <> "_playerGuitar2") ("Licks-guitarFill-l") 1.0)
-                  )
+                  (playBuf_ (tag <> "_playerGuitar2") ("Licks-guitarFill-l") 1.0)
               )
     )
 
@@ -723,6 +732,8 @@ scene time =
                                   <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
                                   <> [ atT 91.0 $ playerVoiceIASM ]
                                   <> [ atT 94.0 $ playerVoiceEnd ]
+                                  <> [ atT 94.0 $ playerGuitarEnd ]
+                                  <> [ atT 94.0 $ playerOrganOutro ]
                               )
                           )
                     )
