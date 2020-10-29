@@ -37,129 +37,129 @@ iasmEngineInfo =
 
 soundsRamp =
   [ (Tuple "A-A4-0" 2.511156462585034)
-  , (Tuple "A-A4-1" 2.6399092970521543)
-  , (Tuple "A-A4-2" 2.317981859410431)
-  , (Tuple "A-E4-0" 1.4487301587301586)
-  , (Tuple "A-E4-1" 1.3521541950113378)
-  , (Tuple "A-E4-2" 1.2112925170068027)
+  --, (Tuple "A-A4-1" 2.6399092970521543)
+  --, (Tuple "A-A4-2" 2.317981859410431)
+  --, (Tuple "A-E4-0" 1.4487301587301586)
+  -- , (Tuple "A-E4-1" 1.3521541950113378)
+  -- , (Tuple "A-E4-2" 1.2112925170068027)
   , (Tuple "A-Fis4-0" 1.1590022675736962)
-  , (Tuple "A-Fis4-1" 1.16702947845805)
-  , (Tuple "A-Fis4-2" 1.2475283446712018)
+  -- , (Tuple "A-Fis4-1" 1.16702947845805)
+  -- , (Tuple "A-Fis4-2" 1.2475283446712018)
   , (Tuple "A-G4-0" 1.3642403628117914)
-  , (Tuple "A-G4-1" 1.0302267573696144)
+  -- , (Tuple "A-G4-1" 1.0302267573696144)
   , (Tuple "In-D4-0" 2.559433106575964)
   , (Tuple "In-E4-0" 2.61578231292517)
-  , (Tuple "In-E4-1" 2.6238321995464853)
-  , (Tuple "In-E4-2" 2.7244444444444444)
-  , (Tuple "In-Fis-3" 2.764671201814059)
+  -- , (Tuple "In-E4-1" 2.6238321995464853)
+  -- , (Tuple "In-E4-2" 2.7244444444444444)
+  -- , (Tuple "In-Fis-3" 2.764671201814059)
   , (Tuple "In-Fis4-0" 3.050408163265306)
-  , (Tuple "In-Fis4-1" 2.2777324263038548)
-  , (Tuple "In-Fis4-2" 2.7606575963718822)
+  -- , (Tuple "In-Fis4-1" 2.2777324263038548)
+  -- , (Tuple "In-Fis4-2" 2.7606575963718822)
   , (Tuple "In-G4-0" 0.9577777777777777)
-  , (Tuple "In-G4-1" 0.8531519274376417)
+  -- , (Tuple "In-G4-1" 0.8531519274376417)
   , (Tuple "Men-A4-0" 1.5292290249433107)
-  , (Tuple "Men-A4-1" 1.6741043083900227)
-  , (Tuple "Men-A4-2" 1.5654421768707483)
+  -- , (Tuple "Men-A4-1" 1.6741043083900227)
+  -- , (Tuple "Men-A4-2" 1.5654421768707483)
   , (Tuple "Men-B4-0" 1.5292290249433107)
   , (Tuple "Men-C5-0" 1.3280045351473924)
-  , (Tuple "Men-C5-1" 1.3239909297052155)
-  , (Tuple "Men-C5-2" 1.3038775510204081)
-  , (Tuple "Men-C5-3" 1.271655328798186)
-  , (Tuple "Men-C5-4" 1.2555555555555555)
+  -- , (Tuple "Men-C5-1" 1.3239909297052155)
+  -- , (Tuple "Men-C5-2" 1.3038775510204081)
+  -- , (Tuple "Men-C5-3" 1.271655328798186)
+  -- , (Tuple "Men-C5-4" 1.2555555555555555)
   , (Tuple "Men-D4-0" 1.464829931972789)
-  , (Tuple "Men-D4-1" 1.6499546485260772)
+  -- , (Tuple "Men-D4-1" 1.6499546485260772)
   , (Tuple "Men-D5-0" 1.1911791383219954)
-  , (Tuple "Men-D5-1" 1.2805668934240362)
-  , (Tuple "Men-D5-2" 1.3924036281179137)
-  , (Tuple "Men-D5-3" 1.3159410430839003)
-  , (Tuple "Men-D5-4" 1.412517006802721)
+  -- , (Tuple "Men-D5-1" 1.2805668934240362)
+  -- , (Tuple "Men-D5-2" 1.3924036281179137)
+  -- , (Tuple "Men-D5-3" 1.3159410430839003)
+  -- , (Tuple "Men-D5-4" 1.412517006802721)
   , (Tuple "Men-E4-0" 1.4769160997732427)
-  , (Tuple "Men-Fis4-0" 1.3320408163265307)
-  , (Tuple "Men-Fis4-1" 1.468843537414966)
-  , (Tuple "Men-Fis4-2" 1.36421768707483)
+  -- , (Tuple "Men-Fis4-0" 1.3320408163265307)
+  -- , (Tuple "Men-Fis4-1" 1.468843537414966)
+  -- , (Tuple "Men-Fis4-2" 1.36421768707483)
   , (Tuple "Men-G4-0" 1.2193650793650794)
-  , (Tuple "Men-G4-1" 1.3199773242630386)
+  -- , (Tuple "Men-G4-1" 1.3199773242630386)
   , (Tuple "Sen-A4-0" 1.7626303854875283)
-  , (Tuple "Sen-A4-1" 1.7384807256235828)
-  , (Tuple "Sen-A4-2" 1.6901814058956917)
-  , (Tuple "Sen-A4-3" 1.5131292517006802)
+  -- , (Tuple "Sen-A4-1" 1.7384807256235828)
+  -- , (Tuple "Sen-A4-2" 1.6901814058956917)
+  -- , (Tuple "Sen-A4-3" 1.5131292517006802)
   , (Tuple "Sen-B4-0" 1.782766439909297)
-  , (Tuple "Sen-B4-1" 1.6499546485260772)
-  , (Tuple "Sen-B4-2" 2.2898185941043083)
+  -- , (Tuple "Sen-B4-1" 1.6499546485260772)
+  -- , (Tuple "Sen-B4-2" 2.2898185941043083)
   , (Tuple "Sen-E4-0" 1.4044671201814058)
-  , (Tuple "Sen-E4-1" 1.5694784580498866)
-  , (Tuple "Sen-E4-2" 1.6741043083900227)
+  -- , (Tuple "Sen-E4-1" 1.5694784580498866)
+  -- , (Tuple "Sen-E4-2" 1.6741043083900227)
   , (Tuple "Sen-Fis4-0" 1.609705215419501)
-  , (Tuple "Sen-Fis4-1" 1.412517006802721)
+  -- , (Tuple "Sen-Fis4-1" 1.412517006802721)
   , (Tuple "Sen-G4-0" 1.4769160997732427)
-  , (Tuple "Sen-G4-1" 1.360204081632653)
-  , (Tuple "Sen-G4-2" 1.505079365079365)
-  , (Tuple "Sen-G4-3" 1.5251927437641724)
+  -- , (Tuple "Sen-G4-1" 1.360204081632653)
+  -- , (Tuple "Sen-G4-2" 1.505079365079365)
+  -- , (Tuple "Sen-G4-3" 1.5251927437641724)
   , (Tuple "Tal-A4-0" 1.0543764172335601)
-  , (Tuple "Tal-A4-1" 1.1469160997732426)
+  -- , (Tuple "Tal-A4-1" 1.1469160997732426)
   , (Tuple "Tal-B4-0" 1.1348526077097505)
-  , (Tuple "Tal-B4-1" 1.255578231292517)
-  , (Tuple "Tal-B4-2" 1.2273922902494332)
+  -- , (Tuple "Tal-B4-1" 1.255578231292517)
+  -- , (Tuple "Tal-B4-2" 1.2273922902494332)
   , (Tuple "Tal-C5-0" 1.255578231292517)
-  , (Tuple "Tal-C5-1" 1.3843537414965987)
-  , (Tuple "Tal-C5-2" 1.215328798185941)
+  -- , (Tuple "Tal-C5-1" 1.3843537414965987)
+  -- , (Tuple "Tal-C5-2" 1.215328798185941)
   , (Tuple "Tal-D4-0" 1.4085034013605442)
-  , (Tuple "Tal-D4-1" 1.271655328798186)
+  -- , (Tuple "Tal-D4-1" 1.271655328798186)
   , (Tuple "Tal-D5-0" 1.3561904761904762)
-  , (Tuple "Tal-D5-1" 0.9859410430839002)
-  , (Tuple "Tal-D5-2" 0.9859410430839002)
-  , (Tuple "Tal-D5-3" 1.1791156462585033)
+  -- , (Tuple "Tal-D5-1" 0.9859410430839002)
+  -- , (Tuple "Tal-D5-2" 0.9859410430839002)
+  -- , (Tuple "Tal-D5-3" 1.1791156462585033)
   , (Tuple "Tal-E4-0" 1.3400907029478457)
   , (Tuple "Tal-E5-0" 1.311904761904762)
-  , (Tuple "Tal-E5-1" 1.16702947845805)
-  , (Tuple "Tal-E5-2" 1.1227891156462586)
-  , (Tuple "Tal-E5-3" 1.295827664399093)
-  , (Tuple "Tal-E5-4" 1.2515646258503401)
-  , (Tuple "Tal-E5-5" 1.2877551020408162)
-  , (Tuple "Tal-E5-6" 1.2354421768707482)
+  -- , (Tuple "Tal-E5-1" 1.16702947845805)
+  -- , (Tuple "Tal-E5-2" 1.1227891156462586)
+  -- , (Tuple "Tal-E5-3" 1.295827664399093)
+  -- , (Tuple "Tal-E5-4" 1.2515646258503401)
+  -- , (Tuple "Tal-E5-5" 1.2877551020408162)
+  -- , (Tuple "Tal-E5-6" 1.2354421768707482)
   , (Tuple "Tal-Fis4-0" 1.1227891156462586)
   , (Tuple "Tal-Fis5-0" 1.2756916099773243)
-  , (Tuple "Tal-Fis5-1" 1.3239909297052155)
-  , (Tuple "Tal-Fis5-2" 0.965827664399093)
-  , (Tuple "Tal-Fis5-3" 1.0463038548752834)
+  -- , (Tuple "Tal-Fis5-1" 1.3239909297052155)
+  -- , (Tuple "Tal-Fis5-2" 0.965827664399093)
+  -- , (Tuple "Tal-Fis5-3" 1.0463038548752834)
   , (Tuple "Tal-G4-0" 1.2273922902494332)
-  , (Tuple "Tal-G4-1" 1.1831292517006802)
+  -- , (Tuple "Tal-G4-1" 1.1831292517006802)
   , (Tuple "Tal-G5-0" 1.2112925170068027)
-  , (Tuple "Tal-G5-1" 1.2434920634920634)
-  , (Tuple "Tal-G5-2" 1.2917913832199546)
-  , (Tuple "Tal-G5-3" 1.3722902494331066)
+  -- , (Tuple "Tal-G5-1" 1.2434920634920634)
+  -- , (Tuple "Tal-G5-2" 1.2917913832199546)
+  -- , (Tuple "Tal-G5-3" 1.3722902494331066)
   , (Tuple "Ti-A4-0" 1.4085034013605442)
-  , (Tuple "Ti-A4-1" 1.3682539682539683)
-  , (Tuple "Ti-A4-2" 1.1469160997732426)
-  , (Tuple "Ti-A4-3" 1.1590022675736962)
-  , (Tuple "Ti-A4-4" 1.1670521541950114)
+  -- , (Tuple "Ti-A4-1" 1.3682539682539683)
+  -- , (Tuple "Ti-A4-2" 1.1469160997732426)
+  -- , (Tuple "Ti-A4-3" 1.1590022675736962)
+  -- , (Tuple "Ti-A4-4" 1.1670521541950114)
   , (Tuple "Ti-B4-0" 1.2725396825396826)
-  , (Tuple "Ti-B4-1" 1.3400907029478457)
-  , (Tuple "Ti-B4-2" 1.3521541950113378)
-  , (Tuple "Ti-B4-3" 1.3119274376417234)
-  , (Tuple "Ti-B4-4" 1.2877777777777777)
-  , (Tuple "Ti-B4-5" 1.1590022675736962)
+  -- , (Tuple "Ti-B4-1" 1.3400907029478457)
+  -- , (Tuple "Ti-B4-2" 1.3521541950113378)
+  -- , (Tuple "Ti-B4-3" 1.3119274376417234)
+  -- , (Tuple "Ti-B4-4" 1.2877777777777777)
+  -- , (Tuple "Ti-B4-5" 1.1590022675736962)
   , (Tuple "Ti-C5-0" 1.1951927437641723)
-  , (Tuple "Ti-C5-1" 1.4165532879818594)
-  , (Tuple "Ti-C5-2" 1.4406802721088436)
-  , (Tuple "Ti-C5-3" 1.2636281179138322)
+  -- , (Tuple "Ti-C5-1" 1.4165532879818594)
+  -- , (Tuple "Ti-C5-2" 1.4406802721088436)
+  -- , (Tuple "Ti-C5-3" 1.2636281179138322)
   , (Tuple "Ti-Cis5-0" 1.203265306122449)
-  , (Tuple "Ti-Cis5-1" 1.2917913832199546)
-  , (Tuple "Ti-Cis5-2" 1.36421768707483)
-  , (Tuple "Ti-Cis5-3" 1.8471428571428572)
-  , (Tuple "Ti-Cis5-4" 1.2877551020408162)
+  -- , (Tuple "Ti-Cis5-1" 1.2917913832199546)
+  -- , (Tuple "Ti-Cis5-2" 1.36421768707483)
+  -- , (Tuple "Ti-Cis5-3" 1.8471428571428572)
+  -- , (Tuple "Ti-Cis5-4" 1.2877551020408162)
   , (Tuple "Ti-D5-0" 1.323968253968254)
-  , (Tuple "Ti-D5-1" 1.4326530612244899)
-  , (Tuple "Ti-D5-2" 1.215328798185941)
+  -- , (Tuple "Ti-D5-1" 1.4326530612244899)
+  -- , (Tuple "Ti-D5-2" 1.215328798185941)
   , (Tuple "Ti-Fis4-0" 1.3038548752834467)
-  , (Tuple "Ti-Fis4-1" 1.0342403628117913)
+  -- , (Tuple "Ti-Fis4-1" 1.0342403628117913)
   , (Tuple "Ti-G4-0" 1.2837414965986396)
-  , (Tuple "Ti-G4-1" 1.376281179138322)
-  , (Tuple "Ti-G4-2" 1.3280045351473924)
-  , (Tuple "Ti-G4-3" 1.2354648526077097)
+  -- , (Tuple "Ti-G4-1" 1.376281179138322)
+  -- , (Tuple "Ti-G4-2" 1.3280045351473924)
+  -- , (Tuple "Ti-G4-3" 1.2354648526077097)
   , Tuple "Men-E5-0" 1.8350566893424036
-  , Tuple "Men-E5-1" 1.255578231292517
-  , Tuple "Men-E5-2" 1.835079365079365
+  --, Tuple "Men-E5-1" 1.255578231292517
+  --, Tuple "Men-E5-2" 1.835079365079365
   ] ::
     Array (Tuple String Number)
 
@@ -171,32 +171,32 @@ soundsRampMap = M.fromFoldable soundsRamp
 
 soundsBowl =
   [ Tuple "Beans---Bounce-Around" 7.133401360544218
-  , Tuple "Beans---Pour-Into-Bowl" 7.428344671201814
-  , Tuple "Beans---Roll-ARound" 14.05859410430839
-  , Tuple "Beans---Shakey-Shakey" 2.507097505668934
-  , Tuple "Beans---Short-Drops" 9.760068027210885
-  , Tuple "Beans---Tiny-Pour" 5.924739229024944
-  , Tuple "Beans---Tiny-Shakes" 9.687278911564626
-  , Tuple "Large---Beans-Perform-1" 39.63201814058957
-  , Tuple "Large---Beans-Perform-2" 44.304263038548754
-  , Tuple "Large---Perform-1" 58.31650793650794
-  , Tuple "Large---Perform-2" 59.05689342403628
-  , Tuple "Large---Strike-1" 27.556757369614512
-  , Tuple "Large---Strike-2" 34.679977324263035
-  , Tuple "Large---Strike-3" 49.44018140589569
-  , Tuple "Medium---Beans-Perform-1" 27.180068027210883
-  , Tuple "Medium---Beans-Perform-2" 27.98140589569161
-  , Tuple "Medium---Perform-1" 31.73292517006803
-  , Tuple "Medium---Perform-2" 29.766802721088435
-  , Tuple "Medium---Perform-3" 26.295396825396825
-  , Tuple "Medium---Strike-1" 16.576825396825395
-  , Tuple "Medium---Strike-2" 18.853968253968254
-  , Tuple "Small---Beans-Perform-1" 20.253265306122447
-  , Tuple "Small---Beans-Perform-2" 17.817868480725625
-  , Tuple "Small---Perform-1" 23.331859410430837
-  , Tuple "Small---Perform-2" 26.8878231292517
-  , Tuple "Small---Perform-3" 24.13902494331066
-  , Tuple "Small---Strike-1" 12.355079365079366
+  -- , Tuple "Beans---Pour-Into-Bowl" 7.428344671201814
+  -- , Tuple "Beans---Roll-ARound" 14.05859410430839
+  -- , Tuple "Beans---Shakey-Shakey" 2.507097505668934
+  -- , Tuple "Beans---Short-Drops" 9.760068027210885
+  -- , Tuple "Beans---Tiny-Pour" 5.924739229024944
+  -- , Tuple "Beans---Tiny-Shakes" 9.687278911564626
+  -- , Tuple "Large---Beans-Perform-1" 39.63201814058957
+  -- , Tuple "Large---Beans-Perform-2" 44.304263038548754
+  -- , Tuple "Large---Perform-1" 58.31650793650794
+  -- , Tuple "Large---Perform-2" 59.05689342403628
+  -- , Tuple "Large---Strike-1" 27.556757369614512
+  -- , Tuple "Large---Strike-2" 34.679977324263035
+  -- , Tuple "Large---Strike-3" 49.44018140589569
+  -- , Tuple "Medium---Beans-Perform-1" 27.180068027210883
+  -- , Tuple "Medium---Beans-Perform-2" 27.98140589569161
+  -- , Tuple "Medium---Perform-1" 31.73292517006803
+  -- , Tuple "Medium---Perform-2" 29.766802721088435
+  -- , Tuple "Medium---Perform-3" 26.295396825396825
+  -- , Tuple "Medium---Strike-1" 16.576825396825395
+  -- , Tuple "Medium---Strike-2" 18.853968253968254
+  -- , Tuple "Small---Beans-Perform-1" 20.253265306122447
+  -- , Tuple "Small---Beans-Perform-2" 17.817868480725625
+  -- , Tuple "Small---Perform-1" 23.331859410430837
+  -- , Tuple "Small---Perform-2" 26.8878231292517
+  -- , Tuple "Small---Perform-3" 24.13902494331066
+  -- , Tuple "Small---Strike-1" 12.355079365079366
   , Tuple "Small---Strike-2" 11.348979591836734
   ] ::
     Array (Tuple String Number)
@@ -209,77 +209,77 @@ soundsBowlMap = M.fromFoldable soundsBowl
 
 soundsChime =
   [ Tuple "Glass---Jangle-1" 2.301111111111111
-  , Tuple "Glass---Jangle-10" 2.729433106575964
-  , Tuple "Glass---Jangle-11" 3.7241950113378683
-  , Tuple "Glass---Jangle-12" 5.396281179138322
-  , Tuple "Glass---Jangle-13" 4.785215419501133
-  , Tuple "Glass---Jangle-14" 5.109750566893424
-  , Tuple "Glass---Jangle-15" 1.062267573696145
-  , Tuple "Glass---Jangle-16" 2.812108843537415
-  , Tuple "Glass---Jangle-2" 0.3187981859410431
-  , Tuple "Glass---Jangle-3" 2.3122902494331066
-  , Tuple "Glass---Jangle-4" 4.244852607709751
-  , Tuple "Glass---Jangle-5" 0.3339455782312925
-  , Tuple "Glass---Jangle-6" 4.198027210884354
-  , Tuple "Glass---Jangle-7" 6.5266213151927435
-  , Tuple "Glass---Jangle-8" 5.6781632653061225
-  , Tuple "Glass---Jangle-9" 2.72281179138322
-  , Tuple "Large-Metal---Jangle-1" 30.22986394557823
-  , Tuple "Large-Metal---Jangle-2" 35.031451247165535
-  , Tuple "Large-Metal---Jangle-3" 34.05777777777778
-  , Tuple "Large-Metal---Jangle-4" 44.86671201814059
-  , Tuple "Large-Metal---Strike-1" 8.119614512471655
-  , Tuple "Large-Metal---Strike-10" 16.756145124716554
-  , Tuple "Large-Metal---Strike-11" 12.678866213151927
-  , Tuple "Large-Metal---Strike-12" 12.795895691609978
-  , Tuple "Large-Metal---Strike-2" 9.075555555555555
-  , Tuple "Large-Metal---Strike-3" 24.450204081632652
-  , Tuple "Large-Metal---Strike-4" 25.26907029478458
-  , Tuple "Large-Metal---Strike-5" 18.504943310657595
-  , Tuple "Large-Metal---Strike-6" 19.81249433106576
-  , Tuple "Large-Metal---Strike-7" 16.04185941043084
-  , Tuple "Large-Metal---Strike-8" 22.769909297052155
-  , Tuple "Large-Metal---Strike-9" 16.91108843537415
-  , Tuple "Medium-Metal---Jangle-1" 21.74204081632653
-  , Tuple "Medium-Metal---Jangle-2" 25.345691609977326
-  , Tuple "Medium-Metal---Jangle-3" 25.92814058956916
-  , Tuple "Medium-Metal---Jangle-4" 31.369206349206348
-  , Tuple "Medium-Metal---Jangle-5" 36.10185941043084
-  , Tuple "Medium-Metal---Jangle-6" 43.107732426303855
-  , Tuple "Medium-Metal---Jangle-7" 32.42267573696145
-  , Tuple "Medium-Metal---Strike-1" 19.002244897959184
-  , Tuple "Medium-Metal---Strike-10" 13.32140589569161
-  , Tuple "Medium-Metal---Strike-11" 11.060884353741496
-  , Tuple "Medium-Metal---Strike-2" 19.08628117913832
-  , Tuple "Medium-Metal---Strike-3" 27.01922902494331
-  , Tuple "Medium-Metal---Strike-4" 26.927437641723355
-  , Tuple "Medium-Metal---Strike-5" 14.383424036281179
-  , Tuple "Medium-Metal---Strike-6" 8.051791383219955
-  , Tuple "Medium-Metal---Strike-7" 12.11687074829932
-  , Tuple "Medium-Metal---Strike-8" 15.123265306122448
-  , Tuple "Medium-Metal---Strike-9" 13.202743764172336
-  , Tuple "Performance---Glass" 73.4691156462585
-  , Tuple "Performance---Large-Metal" 263.9421541950113
-  , Tuple "Performance---Medium-Metal" 225.3205442176871
-  , Tuple "Performance---Smol-Metal" 54.277687074829934
-  , Tuple "Performance---Tiny-Metal" 66.87850340136055
-  , Tuple "Smol-Metal---Jangle-1" 4.434149659863945
-  , Tuple "Smol-Metal---Jangle-10" 5.852154195011338
-  , Tuple "Smol-Metal---Jangle-11" 5.546961451247165
-  , Tuple "Smol-Metal---Jangle-2" 7.981315192743764
-  , Tuple "Smol-Metal---Jangle-3" 8.817732426303856
-  , Tuple "Smol-Metal---Jangle-4" 8.871655328798186
-  , Tuple "Smol-Metal---Jangle-5" 5.361428571428571
-  , Tuple "Smol-Metal---Jangle-6" 12.680680272108843
-  , Tuple "Smol-Metal---Jangle-7" 9.771473922902494
-  , Tuple "Smol-Metal---Jangle-8" 5.065260770975057
-  , Tuple "Smol-Metal---Jangle-9" 5.101473922902494
-  , Tuple "Tiny-Metal---Jangle-1" 6.633696145124716
-  , Tuple "Tiny-Metal---Jangle-2" 6.426961451247165
-  , Tuple "Tiny-Metal---Jangle-3" 7.705260770975057
-  , Tuple "Tiny-Metal---Jangle-4" 7.356031746031746
-  , Tuple "Tiny-Metal---Jangle-5" 15.176462585034013
-  , Tuple "Tiny-Metal---Jangle-6" 21.149274376417235
+  -- , Tuple "Glass---Jangle-10" 2.729433106575964
+  -- , Tuple "Glass---Jangle-11" 3.7241950113378683
+  -- , Tuple "Glass---Jangle-12" 5.396281179138322
+  -- , Tuple "Glass---Jangle-13" 4.785215419501133
+  -- , Tuple "Glass---Jangle-14" 5.109750566893424
+  -- , Tuple "Glass---Jangle-15" 1.062267573696145
+  -- , Tuple "Glass---Jangle-16" 2.812108843537415
+  -- , Tuple "Glass---Jangle-2" 0.3187981859410431
+  -- , Tuple "Glass---Jangle-3" 2.3122902494331066
+  -- , Tuple "Glass---Jangle-4" 4.244852607709751
+  -- , Tuple "Glass---Jangle-5" 0.3339455782312925
+  -- , Tuple "Glass---Jangle-6" 4.198027210884354
+  -- , Tuple "Glass---Jangle-7" 6.5266213151927435
+  -- , Tuple "Glass---Jangle-8" 5.6781632653061225
+  -- , Tuple "Glass---Jangle-9" 2.72281179138322
+  -- , Tuple "Large-Metal---Jangle-1" 30.22986394557823
+  -- , Tuple "Large-Metal---Jangle-2" 35.031451247165535
+  -- , Tuple "Large-Metal---Jangle-3" 34.05777777777778
+  -- , Tuple "Large-Metal---Jangle-4" 44.86671201814059
+  -- , Tuple "Large-Metal---Strike-1" 8.119614512471655
+  -- , Tuple "Large-Metal---Strike-10" 16.756145124716554
+  -- , Tuple "Large-Metal---Strike-11" 12.678866213151927
+  -- , Tuple "Large-Metal---Strike-12" 12.795895691609978
+  -- , Tuple "Large-Metal---Strike-2" 9.075555555555555
+  -- , Tuple "Large-Metal---Strike-3" 24.450204081632652
+  -- , Tuple "Large-Metal---Strike-4" 25.26907029478458
+  -- , Tuple "Large-Metal---Strike-5" 18.504943310657595
+  -- , Tuple "Large-Metal---Strike-6" 19.81249433106576
+  -- , Tuple "Large-Metal---Strike-7" 16.04185941043084
+  -- , Tuple "Large-Metal---Strike-8" 22.769909297052155
+  -- , Tuple "Large-Metal---Strike-9" 16.91108843537415
+  -- , Tuple "Medium-Metal---Jangle-1" 21.74204081632653
+  -- , Tuple "Medium-Metal---Jangle-2" 25.345691609977326
+  -- , Tuple "Medium-Metal---Jangle-3" 25.92814058956916
+  -- , Tuple "Medium-Metal---Jangle-4" 31.369206349206348
+  -- , Tuple "Medium-Metal---Jangle-5" 36.10185941043084
+  -- , Tuple "Medium-Metal---Jangle-6" 43.107732426303855
+  -- , Tuple "Medium-Metal---Jangle-7" 32.42267573696145
+  -- , Tuple "Medium-Metal---Strike-1" 19.002244897959184
+  -- , Tuple "Medium-Metal---Strike-10" 13.32140589569161
+  -- , Tuple "Medium-Metal---Strike-11" 11.060884353741496
+  -- , Tuple "Medium-Metal---Strike-2" 19.08628117913832
+  -- , Tuple "Medium-Metal---Strike-3" 27.01922902494331
+  -- , Tuple "Medium-Metal---Strike-4" 26.927437641723355
+  -- , Tuple "Medium-Metal---Strike-5" 14.383424036281179
+  -- , Tuple "Medium-Metal---Strike-6" 8.051791383219955
+  -- , Tuple "Medium-Metal---Strike-7" 12.11687074829932
+  -- , Tuple "Medium-Metal---Strike-8" 15.123265306122448
+  -- , Tuple "Medium-Metal---Strike-9" 13.202743764172336
+  -- , Tuple "Performance---Glass" 73.4691156462585
+  -- , Tuple "Performance---Large-Metal" 263.9421541950113
+  -- , Tuple "Performance---Medium-Metal" 225.3205442176871
+  -- , Tuple "Performance---Smol-Metal" 54.277687074829934
+  -- , Tuple "Performance---Tiny-Metal" 66.87850340136055
+  -- , Tuple "Smol-Metal---Jangle-1" 4.434149659863945
+  -- , Tuple "Smol-Metal---Jangle-10" 5.852154195011338
+  -- , Tuple "Smol-Metal---Jangle-11" 5.546961451247165
+  -- , Tuple "Smol-Metal---Jangle-2" 7.981315192743764
+  -- , Tuple "Smol-Metal---Jangle-3" 8.817732426303856
+  -- , Tuple "Smol-Metal---Jangle-4" 8.871655328798186
+  -- , Tuple "Smol-Metal---Jangle-5" 5.361428571428571
+  -- , Tuple "Smol-Metal---Jangle-6" 12.680680272108843
+  -- , Tuple "Smol-Metal---Jangle-7" 9.771473922902494
+  -- , Tuple "Smol-Metal---Jangle-8" 5.065260770975057
+  -- , Tuple "Smol-Metal---Jangle-9" 5.101473922902494
+  -- , Tuple "Tiny-Metal---Jangle-1" 6.633696145124716
+  -- , Tuple "Tiny-Metal---Jangle-2" 6.426961451247165
+  -- , Tuple "Tiny-Metal---Jangle-3" 7.705260770975057
+  -- , Tuple "Tiny-Metal---Jangle-4" 7.356031746031746
+  -- , Tuple "Tiny-Metal---Jangle-5" 15.176462585034013
+  -- , Tuple "Tiny-Metal---Jangle-6" 21.149274376417235
   , Tuple "Tiny-Metal---Jangle-7" 14.375873015873015
   , Tuple "Tiny-Metal---Jangle-8" 19.43750566893424
   ] ::
@@ -294,106 +294,106 @@ soundsChimeMap = M.fromFoldable soundsChime
 soundsTongue =
   [ Tuple "Drum-Strike-1" 2.068390022675737
   , Tuple "Drum-Strike-2" 2.110770975056689
-  , Tuple "Drum-Strike-3" 1.9203628117913831
-  , Tuple "Drum-Strike-4" 3.5199319727891156
-  , Tuple "Drum-Strike-5" 1.952108843537415
-  , Tuple "Drum-Strike-6" 1.6828571428571428
-  , Tuple "Drum-Strike-7" 2.1110430839002268
-  , Tuple "Drum-Strike-8" 4.018163265306122
-  , Tuple "Maj-3rd" 11.66575963718821
-  , Tuple "Mallet-A2_1" 6.090929705215419
-  , Tuple "Mallet-A2_2" 8.503038548752835
-  , Tuple "Mallet-A3_1" 8.948707482993198
-  , Tuple "Mallet-A3_2" 10.401972789115646
-  , Tuple "Mallet-B2_1" 5.32702947845805
-  , Tuple "Mallet-B2_2" 8.435170068027212
-  , Tuple "Mallet-B3_1" 8.41326530612245
-  , Tuple "Mallet-B3_2" 9.287891156462585
-  , Tuple "Mallet-D2_1" 7.039637188208617
-  , Tuple "Mallet-D2_2" 9.193287981859411
-  , Tuple "Mallet-D3_1" 8.432698412698413
-  , Tuple "Mallet-D3_2" 8.818798185941043
-  , Tuple "Mallet-D3_3" 9.813718820861679
-  , Tuple "Mallet-Drag" 38.805192743764174
-  , Tuple "Mallet-E1_1" 5.389523809523809
-  , Tuple "Mallet-E1_2" 8.492766439909298
-  , Tuple "Mallet-E2_1" 10.487573696145125
-  , Tuple "Mallet-E2_2" 12.385555555555555
-  , Tuple "Mallet-G1_1" 7.12734693877551
-  , Tuple "Mallet-G1_2" 9.903786848072562
-  , Tuple "Mallet-G1_3" 9.623219954648526
-  , Tuple "Mallet-G2_1" 9.6
-  , Tuple "Mallet-G2_2" 11.074285714285715
-  , Tuple "Melodic-1" 19.294489795918366
-  , Tuple "Melodic-2" 14.200476190476191
-  , Tuple "Melodic-3" 21.872857142857143
-  , Tuple "Melodic-4" 16.379478458049885
-  , Tuple "Melodic-5" 18.92231292517007
-  , Tuple "Melodic-6" 14.183197278911564
-  , Tuple "Mute_A3_1" 2.227074829931973
-  , Tuple "Mute_A3_2" 2.899863945578231
-  , Tuple "Mute_B2_1" 1.970907029478458
-  , Tuple "Mute_B2_2" 2.7991836734693876
-  , Tuple "Mute_B3_1" 2.3194104308390022
-  , Tuple "Mute_B3_2" 3.7057142857142855
-  , Tuple "Mute_D2_1" 2.0817687074829934
-  , Tuple "Mute_D2_2" 3.6892743764172335
-  , Tuple "Mute_D3_1" 2.399546485260771
-  , Tuple "Mute_D3_2" 2.628390022675737
-  , Tuple "Mute_E1_1" 1.7348072562358277
-  , Tuple "Mute_E1_2" 3.0092743764172334
-  , Tuple "Mute_E2_1" 2.3523809523809525
-  , Tuple "Mute_E2_2" 2.276281179138322
-  , Tuple "Mute_E2_3" 4.457800453514739
-  , Tuple "Mute_G1_1" 2.4279818594104308
-  , Tuple "Mute_G1_2" 2.4920408163265306
-  , Tuple "Mute_G2_1" 2.465963718820862
-  , Tuple "Mute_G2_2" 1.9372562358276644
-  , Tuple "Mute_G2_3" 3.0500453514739228
-  , Tuple "RAW_Tongue-Drum-Recording" 1136.62693877551
-  , Tuple "Roll-B2_1" 7.905963718820861
-  , Tuple "Roll-B2_2" 6.545918367346939
-  , Tuple "Roll_A2_1" 6.338571428571429
-  , Tuple "Roll_A2_2" 7.154308390022676
-  , Tuple "Roll_A3_1" 6.737482993197279
-  , Tuple "Roll_A3_2" 5.782857142857143
-  , Tuple "Roll_B1_1" 6.364331065759637
-  , Tuple "Roll_B1_2" 5.6302267573696145
-  , Tuple "Roll_D2_1" 6.191972789115646
-  , Tuple "Roll_D2_2" 8.030589569160998
-  , Tuple "Roll_D3_1" 4.971111111111111
-  , Tuple "Roll_D3_2" 8.206689342403628
-  , Tuple "Roll_E1_1" 8.627528344671202
-  , Tuple "Roll_E2_1" 6.419115646258503
-  , Tuple "Roll_E2_2" 10.962879818594104
-  , Tuple "Roll_G1_1" 8.20451247165533
-  , Tuple "Roll_G1_2" 8.304126984126984
-  , Tuple "Roll_G2_1" 6.336689342403628
-  , Tuple "Roll_G2_2" 5.621519274376417
-  , Tuple "Stick-Drag-1" 13.991315192743764
-  , Tuple "Stick-Drag-2" 2.5011337868480727
-  , Tuple "Stick-Drag-3" 14.810725623582766
-  , Tuple "Stick-Strike-1" 0.5592290249433106
-  , Tuple "Stick-Strike-10" 2.26172335600907
-  , Tuple "Stick-Strike-11" 2.3292290249433107
-  , Tuple "Stick-Strike-12" 1.9672789115646259
-  , Tuple "Stick-Strike-13" 4.693560090702948
-  , Tuple "Stick-Strike-14" 4.021043083900227
-  , Tuple "Stick-Strike-15" 3.397437641723356
-  , Tuple "Stick-Strike-16" 5.338140589569161
-  , Tuple "Stick-Strike-17" 5.386916099773242
-  , Tuple "Stick-Strike-18" 5.8336507936507935
-  , Tuple "Stick-Strike-19" 6.560294784580499
-  , Tuple "Stick-Strike-2" 1.0129931972789115
-  , Tuple "Stick-Strike-20" 4.647709750566894
-  , Tuple "Stick-Strike-21" 4.977687074829932
-  , Tuple "Stick-Strike-3" 1.263877551020408
-  , Tuple "Stick-Strike-4" 1.0765306122448979
-  , Tuple "Stick-Strike-5" 1.90437641723356
-  , Tuple "Stick-Strike-6" 1.7545124716553289
-  , Tuple "Stick-Strike-7" 1.7829931972789115
+  -- , Tuple "Drum-Strike-3" 1.9203628117913831
+  -- , Tuple "Drum-Strike-4" 3.5199319727891156
+  -- , Tuple "Drum-Strike-5" 1.952108843537415
+  -- , Tuple "Drum-Strike-6" 1.6828571428571428
+  -- , Tuple "Drum-Strike-7" 2.1110430839002268
+  -- , Tuple "Drum-Strike-8" 4.018163265306122
+  -- , Tuple "Maj-3rd" 11.66575963718821
+  -- , Tuple "Mallet-A2_1" 6.090929705215419
+  -- , Tuple "Mallet-A2_2" 8.503038548752835
+  -- , Tuple "Mallet-A3_1" 8.948707482993198
+  -- , Tuple "Mallet-A3_2" 10.401972789115646
+  -- , Tuple "Mallet-B2_1" 5.32702947845805
+  -- , Tuple "Mallet-B2_2" 8.435170068027212
+  -- , Tuple "Mallet-B3_1" 8.41326530612245
+  -- , Tuple "Mallet-B3_2" 9.287891156462585
+  -- , Tuple "Mallet-D2_1" 7.039637188208617
+  -- , Tuple "Mallet-D2_2" 9.193287981859411
+  -- , Tuple "Mallet-D3_1" 8.432698412698413
+  -- , Tuple "Mallet-D3_2" 8.818798185941043
+  -- , Tuple "Mallet-D3_3" 9.813718820861679
+  -- , Tuple "Mallet-Drag" 38.805192743764174
+  -- , Tuple "Mallet-E1_1" 5.389523809523809
+  -- , Tuple "Mallet-E1_2" 8.492766439909298
+  -- , Tuple "Mallet-E2_1" 10.487573696145125
+  -- , Tuple "Mallet-E2_2" 12.385555555555555
+  -- , Tuple "Mallet-G1_1" 7.12734693877551
+  -- , Tuple "Mallet-G1_2" 9.903786848072562
+  -- , Tuple "Mallet-G1_3" 9.623219954648526
+  -- , Tuple "Mallet-G2_1" 9.6
+  -- , Tuple "Mallet-G2_2" 11.074285714285715
+  -- , Tuple "Melodic-1" 19.294489795918366
+  -- , Tuple "Melodic-2" 14.200476190476191
+  -- , Tuple "Melodic-3" 21.872857142857143
+  -- , Tuple "Melodic-4" 16.379478458049885
+  -- , Tuple "Melodic-5" 18.92231292517007
+  -- , Tuple "Melodic-6" 14.183197278911564
+  -- , Tuple "Mute_A3_1" 2.227074829931973
+  -- , Tuple "Mute_A3_2" 2.899863945578231
+  -- , Tuple "Mute_B2_1" 1.970907029478458
+  -- , Tuple "Mute_B2_2" 2.7991836734693876
+  -- , Tuple "Mute_B3_1" 2.3194104308390022
+  -- , Tuple "Mute_B3_2" 3.7057142857142855
+  -- , Tuple "Mute_D2_1" 2.0817687074829934
+  -- , Tuple "Mute_D2_2" 3.6892743764172335
+  -- , Tuple "Mute_D3_1" 2.399546485260771
+  -- , Tuple "Mute_D3_2" 2.628390022675737
+  -- , Tuple "Mute_E1_1" 1.7348072562358277
+  -- , Tuple "Mute_E1_2" 3.0092743764172334
+  -- , Tuple "Mute_E2_1" 2.3523809523809525
+  -- , Tuple "Mute_E2_2" 2.276281179138322
+  -- , Tuple "Mute_E2_3" 4.457800453514739
+  -- , Tuple "Mute_G1_1" 2.4279818594104308
+  -- , Tuple "Mute_G1_2" 2.4920408163265306
+  -- , Tuple "Mute_G2_1" 2.465963718820862
+  -- , Tuple "Mute_G2_2" 1.9372562358276644
+  -- , Tuple "Mute_G2_3" 3.0500453514739228
+  -- , Tuple "RAW_Tongue-Drum-Recording" 1136.62693877551
+  -- , Tuple "Roll-B2_1" 7.905963718820861
+  -- , Tuple "Roll-B2_2" 6.545918367346939
+  -- , Tuple "Roll_A2_1" 6.338571428571429
+  -- , Tuple "Roll_A2_2" 7.154308390022676
+  -- , Tuple "Roll_A3_1" 6.737482993197279
+  -- , Tuple "Roll_A3_2" 5.782857142857143
+  -- , Tuple "Roll_B1_1" 6.364331065759637
+  -- , Tuple "Roll_B1_2" 5.6302267573696145
+  -- , Tuple "Roll_D2_1" 6.191972789115646
+  -- , Tuple "Roll_D2_2" 8.030589569160998
+  -- , Tuple "Roll_D3_1" 4.971111111111111
+  -- , Tuple "Roll_D3_2" 8.206689342403628
+  -- , Tuple "Roll_E1_1" 8.627528344671202
+  -- , Tuple "Roll_E2_1" 6.419115646258503
+  -- , Tuple "Roll_E2_2" 10.962879818594104
+  -- , Tuple "Roll_G1_1" 8.20451247165533
+  -- , Tuple "Roll_G1_2" 8.304126984126984
+  -- , Tuple "Roll_G2_1" 6.336689342403628
+  -- , Tuple "Roll_G2_2" 5.621519274376417
+  -- , Tuple "Stick-Drag-1" 13.991315192743764
+  -- , Tuple "Stick-Drag-2" 2.5011337868480727
+  -- , Tuple "Stick-Drag-3" 14.810725623582766
+  -- , Tuple "Stick-Strike-1" 0.5592290249433106
+  -- , Tuple "Stick-Strike-10" 2.26172335600907
+  -- , Tuple "Stick-Strike-11" 2.3292290249433107
+  -- , Tuple "Stick-Strike-12" 1.9672789115646259
+  -- , Tuple "Stick-Strike-13" 4.693560090702948
+  -- , Tuple "Stick-Strike-14" 4.021043083900227
+  -- , Tuple "Stick-Strike-15" 3.397437641723356
+  -- , Tuple "Stick-Strike-16" 5.338140589569161
+  -- , Tuple "Stick-Strike-17" 5.386916099773242
+  -- , Tuple "Stick-Strike-18" 5.8336507936507935
+  -- , Tuple "Stick-Strike-19" 6.560294784580499
+  -- , Tuple "Stick-Strike-2" 1.0129931972789115
+  -- , Tuple "Stick-Strike-20" 4.647709750566894
+  -- , Tuple "Stick-Strike-21" 4.977687074829932
+  -- , Tuple "Stick-Strike-3" 1.263877551020408
+  -- , Tuple "Stick-Strike-4" 1.0765306122448979
+  -- , Tuple "Stick-Strike-5" 1.90437641723356
+  -- , Tuple "Stick-Strike-6" 1.7545124716553289
+  -- , Tuple "Stick-Strike-7" 1.7829931972789115
   , Tuple "Stick-Strike-8" 2.0106575963718822
-  , Tuple "Stick-Strike-9" 2.3782766439909295
+  -- , Tuple "Stick-Strike-9" 2.3782766439909295
   , Tuple "Strike-Multiple" 11.801746031746031
   ] ::
     Array (Tuple String Number)

@@ -2,7 +2,7 @@ module Klank.IASM.Middle2 where
 
 import Prelude
 import Control.Promise (toAffE)
-import Data.Array (filter, foldl)
+import Data.Array (filter, foldl, mapWithIndex)
 import Data.Array (fold, head, last, range, span)
 import Data.Int (toNumber)
 import Data.Lazy (Lazy, defer, force)
@@ -33,6 +33,36 @@ iasmEngineInfo =
   , doWebAudio: true
   } ::
     EngineInfo
+
+kr = (toNumber iasmEngineInfo.msBetweenSamples) / 1000.0 :: Number
+
+epwf :: Array (Tuple Number Number) -> Number -> AudioParameter Number
+epwf p s =
+  let
+    ht = span ((s >= _) <<< fst) p
+
+    left = fromMaybe (Tuple 0.0 0.0) $ last ht.init
+
+    right =
+      fromMaybe
+        (maybe (Tuple 10000.0 0.0) (over _1 (_ + 1.0)) $ last p)
+        $ head ht.rest
+  in
+    if (fst right - s) < kr then
+      AudioParameter
+        { param: (snd right)
+        , timeOffset: (fst right - s)
+        }
+    else
+      let
+        m = (snd right - snd left) / (fst right - fst left)
+
+        b = (snd right - (m * fst right))
+      in
+        AudioParameter { param: (m * s + b), timeOffset: 0.0 }
+
+fromCloud :: String -> String
+fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
 
 soundsFull =
   [ Tuple "guitar" 100.0
@@ -99,9 +129,10 @@ soundsLicksMap :: M.Map String Number
 soundsLicksMap = M.fromFoldable soundsLicks
 
 soundsEnd =
-  [ Tuple "endVoice2" 30.0
-  , Tuple "endGuitar2" 30.0
-  , Tuple "outroOrgan" 30.0
+  [ Tuple "endVoice2" 90.0
+  , Tuple "endGuitar2" 90.0
+  , Tuple "outroOrgan" 90.0
+  , Tuple "lowC" 23.0
   , Tuple "inASentimentalMood" 10.0
   ] ::
     Array (Tuple String Number)
@@ -202,35 +233,129 @@ fromSoundsMooRoo s i = fromMaybe 0.0 (M.lookup (s <> "-" <> show i) soundsMooRoo
 soundsMooRooMap :: M.Map String Number
 soundsMooRooMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> show y) b) soundsMooRoo)
 
-kr = (toNumber iasmEngineInfo.msBetweenSamples) / 1000.0 :: Number
+soundsRamp =
+  [ (Tuple "A-A4-0" 2.511156462585034)
+  , (Tuple "A-Fis4-0" 1.1590022675736962)
+  , (Tuple "A-G4-0" 1.3642403628117914)
+  , (Tuple "In-D4-0" 2.559433106575964)
+  , (Tuple "In-E4-0" 2.61578231292517)
+  , (Tuple "In-Fis4-0" 3.050408163265306)
+  , (Tuple "In-G4-0" 0.9577777777777777)
+  , (Tuple "Men-A4-0" 1.5292290249433107)
+  , (Tuple "Men-B4-0" 1.5292290249433107)
+  , (Tuple "Men-C5-0" 1.3280045351473924)
+  , (Tuple "Men-D4-0" 1.464829931972789)
+  , (Tuple "Men-D5-0" 1.1911791383219954)
+  , (Tuple "Men-E4-0" 1.4769160997732427)
+  , (Tuple "Men-G4-0" 1.2193650793650794)
+  , (Tuple "Sen-A4-0" 1.7626303854875283)
+  , (Tuple "Sen-B4-0" 1.782766439909297)
+  , (Tuple "Sen-E4-0" 1.4044671201814058)
+  , (Tuple "Sen-Fis4-0" 1.609705215419501)
+  , (Tuple "Sen-G4-0" 1.4769160997732427)
+  , (Tuple "Tal-A4-0" 1.0543764172335601)
+  , (Tuple "Tal-B4-0" 1.1348526077097505)
+  , (Tuple "Tal-C5-0" 1.255578231292517)
+  , (Tuple "Tal-D4-0" 1.4085034013605442)
+  , (Tuple "Tal-D5-0" 1.3561904761904762)
+  , (Tuple "Tal-E4-0" 1.3400907029478457)
+  , (Tuple "Tal-E5-0" 1.311904761904762)
+  , (Tuple "Tal-Fis4-0" 1.1227891156462586)
+  , (Tuple "Tal-Fis5-0" 1.2756916099773243)
+  , (Tuple "Tal-G4-0" 1.2273922902494332)
+  , (Tuple "Tal-G5-0" 1.2112925170068027)
+  , (Tuple "Ti-A4-0" 1.4085034013605442)
+  , (Tuple "Ti-B4-0" 1.2725396825396826)
+  , (Tuple "Ti-C5-0" 1.1951927437641723)
+  , (Tuple "Ti-Cis5-0" 1.203265306122449)
+  , (Tuple "Ti-D5-0" 1.323968253968254)
+  , (Tuple "Ti-Fis4-0" 1.3038548752834467)
+  , (Tuple "Ti-G4-0" 1.2837414965986396)
+  , Tuple "Men-E5-0" 1.8350566893424036
+  ] ::
+    Array (Tuple String Number)
 
-epwf :: Array (Tuple Number Number) -> Number -> AudioParameter Number
-epwf p s =
-  let
-    ht = span ((s >= _) <<< fst) p
+fromSoundsRamp :: String -> Number
+fromSoundsRamp i = fromMaybe 0.0 (M.lookup i soundsRampMap)
 
-    left = fromMaybe (Tuple 0.0 0.0) $ last ht.init
+soundsRampMap :: M.Map String Number
+soundsRampMap = M.fromFoldable soundsRamp
 
-    right =
-      fromMaybe
-        (maybe (Tuple 10000.0 0.0) (over _1 (_ + 1.0)) $ last p)
-        $ head ht.rest
-  in
-    if (fst right - s) < kr then
-      AudioParameter
-        { param: (snd right)
-        , timeOffset: (fst right - s)
-        }
-    else
-      let
-        m = (snd right - snd left) / (fst right - fst left)
+soundsMood =
+  [ MoodIdx (Tuple "E3" 0) 1.8808163265306121
+  , MoodIdx (Tuple "E3" 1) 1.689251700680272
+  , MoodIdx (Tuple "E3" 2) 1.5615419501133787
+  , MoodIdx (Tuple "E3" 3) 3.2565986394557824
+  , MoodIdx (Tuple "B3" 0) 5.793378684807256
+  --, MoodIdx (Tuple "B3" 1) 5.31156462585034
+  --, MoodIdx (Tuple "B3" 2) 4.481451247165533
+  --, MoodIdx (Tuple "B3" 3) 1.7240816326530612
+  , MoodIdx (Tuple "E4" 0) 7.7148299319727895
+  --, MoodIdx (Tuple "E4" 1) 6.472562358276644
+  --, MoodIdx (Tuple "E4" 2) 7.302675736961452
+  --, MoodIdx (Tuple "E4" 3) 6.635102040816326
+  , MoodIdx (Tuple "F#4" 0) 4.231836734693878
+  --, MoodIdx (Tuple "F#4" 1) 4.4117913832199545
+  --, MoodIdx (Tuple "F#4" 2) 4.6381859410430835
+  --, MoodIdx (Tuple "F#4" 3) 4.649795918367347
+  , MoodIdx (Tuple "G4" 0) 4.818140589569161
+  --, MoodIdx (Tuple "G4" 1) 3.779047619047619
+  --, MoodIdx (Tuple "G4" 2) 2.7921995464852607
+  --, MoodIdx (Tuple "G4" 3) 3.5874829931972787
+  --, MoodIdx (Tuple "G4" 4) 5.491519274376417
+  , MoodIdx (Tuple "A4" 0) 2.885079365079365
+  --, MoodIdx (Tuple "A4" 1) 3.221768707482993
+  --, MoodIdx (Tuple "A4" 2) 3.0203628117913834
+  --, MoodIdx (Tuple "A4" 3) 3.111473922902494
+  --, MoodIdx (Tuple "A4" 5) 8.765532879818593
+  , MoodIdx (Tuple "B4" 0) 1.486077097505669
+  --, MoodIdx (Tuple "B4" 1) 2.948934240362812
+  --, MoodIdx (Tuple "B4" 2) 7.796099773242631
+  --, MoodIdx (Tuple "B4" 3) 5.741496598639456
+  , MoodIdx (Tuple "C5" 0) 2.815419501133787
+  --, MoodIdx (Tuple "C5" 1) 0.6675736961451247
+  --, MoodIdx (Tuple "C5" 2) 5.955918367346939
+  --, MoodIdx (Tuple "C5" 3) 5.381224489795918
+  , MoodIdx (Tuple "C#5" 0) 9.102222222222222
+  --, MoodIdx (Tuple "C#5" 1) 3.465578231292517
+  --, MoodIdx (Tuple "C#5" 2) 2.6238548752834467
+  --, MoodIdx (Tuple "C#5" 3) 4.284081632653061
+  , MoodIdx (Tuple "D5" 0) 3.1579138321995464
+  --, MoodIdx (Tuple "D5" 1) 1.787936507936508
+  --, MoodIdx (Tuple "D5" 2) 8.695873015873016
+  --, MoodIdx (Tuple "D5" 3) 1.5615419501133787
+  , MoodIdx (Tuple "D#5" 0) 4.284081632653061
+  --, MoodIdx (Tuple "D#5" 1) 6.780226757369615
+  --, MoodIdx (Tuple "D#5" 2) 6.757006802721088
+  --, MoodIdx (Tuple "D#5" 3) 1.8169614512471655
+  , MoodIdx (Tuple "E5" 0) 8.59718820861678
+  --, MoodIdx (Tuple "E5" 1) 7.024036281179138
+  --, MoodIdx (Tuple "E5" 2) 7.7496598639455785
+  --, MoodIdx (Tuple "E5" 3) 5.932698412698413
+  , MoodIdx (Tuple "F#5" 0) 9.189297052154195
+  --, MoodIdx (Tuple "F#5" 1) 9.549206349206349
+  --, MoodIdx (Tuple "F#5" 2) 5.143219954648526
+  --, MoodIdx (Tuple "F#5" 3) 8.858412698412698
+  , MoodIdx (Tuple "G5" 0) 6.809251700680272
+  --, MoodIdx (Tuple "G5" 1) 4.8703854875283445
+  --, MoodIdx (Tuple "G5" 2) 5.282539682539682
+  --, MoodIdx (Tuple "G5" 3) 7.999274376417233
+  , MoodIdx (Tuple "A5" 0) 4.14827664399093
+  --, MoodIdx (Tuple "A5" 1) 6.826666666666667
+  --, MoodIdx (Tuple "A5" 2) 17.925804988662133
+  --, MoodIdx (Tuple "A5" 3) 15.696689342403628
+  , MoodIdx (Tuple "B5" 0) 2.3858503401360545
+  --, MoodIdx (Tuple "B5" 1) 3.465578231292517
+  --, MoodIdx (Tuple "B5" 2) 3.4771882086167802
+  --, MoodIdx (Tuple "B5" 3) 3.6048979591836736
+  ] ::
+    Array MoodIdx
 
-        b = (snd right - (m * fst right))
-      in
-        AudioParameter { param: (m * s + b), timeOffset: 0.0 }
+fromSoundsMood :: String -> Int -> Number
+fromSoundsMood s i = fromMaybe 0.0 (M.lookup (s <> "-" <> show i) soundsMoodMap)
 
-fromCloud :: String -> String
-fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
+soundsMoodMap :: M.Map String Number
+soundsMoodMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> show y) b) soundsMood)
 
 -- 0 3 5 7 11 14
 main :: Klank
@@ -306,6 +431,17 @@ main =
                       soundsBridge
                   )
                 <> ( map
+                      ( \(MoodIdx (Tuple pitch n) _) ->
+                          let
+                            s = show n
+                          in
+                            Tuple
+                              ("Mood-" <> pitch <> "-" <> s <> "-l")
+                              ("Mood/" <> (replace (Pattern "#") (Replacement "%23") pitch) <> "/" <> s <> ".l.ogg")
+                      )
+                      soundsMood
+                  )
+                <> ( map
                       ( \i ->
                           let
                             s = fst i
@@ -326,6 +462,17 @@ main =
                               ("End/" <> s <> ".ogg")
                       )
                       soundsEnd
+                  )
+                <> ( map
+                      ( \i ->
+                          let
+                            s = fst i
+                          in
+                            Tuple
+                              ("Ramp-" <> s <> "-l")
+                              ("Ramp/" <> s <> ".l.ogg")
+                      )
+                      soundsRamp
                   )
                 <> ( map
                       ( \(MoodIdx (Tuple pitch n) _) ->
@@ -365,6 +512,9 @@ type PlayerInOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
+endGainFunction :: Number -> Number -> AudioParameter Number
+endGainFunction gl time = ((epwf [ Tuple 0.0 gl, Tuple 30.0 gl, Tuple 38.0 (gl / 2.0), Tuple 53.0 0.0 ]) time)
+
 playerGuitar :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerGuitar tag name tos time =
   let
@@ -390,7 +540,7 @@ playerGuitarEnd time =
           pure
             $ panner_ ("guitarEnd" <> "_panGuitarEnd") 0.0
                 ( gainT_' ("guitarEnd" <> "_panGuitarEnd")
-                    ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
+                    (endGainFunction 0.94 time)
                     (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
                 )
       )
@@ -398,15 +548,15 @@ playerGuitarEnd time =
 playerOrganOutro :: Number -> List (AudioUnit D2)
 playerOrganOutro time =
   let
-    len = fromMaybe 0.0 (M.lookup "organOutro" soundsEndMap)
+    len = fromMaybe 0.0 (M.lookup "outroOrgan" soundsEndMap)
   in
     boundPlayer (len + 1.0) time
       ( defer \_ ->
           pure
-            $ panner_ ("guitarEnd" <> "-organOutro") 0.0
-                ( gainT_' ("guitarEnd" <> "-organOutro")
-                    ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
-                    (playBufWithOffset_ ("organOutro" <> "_playerGuitar") ("End-organOutro") 1.0 0.0)
+            $ panner_ ("outroOrgan" <> "-outroOrgan") 0.0
+                ( gainT_' ("outroOrgan" <> "-outroOrgan")
+                    (endGainFunction 0.94 time)
+                    (playBufWithOffset_ ("outroOrgan" <> "_playerGuitar") ("End-outroOrgan") 1.0 0.0)
                 )
       )
 
@@ -451,38 +601,6 @@ playerHarm tag name hp g time =
                 )
       )
 
-playerOtw0 :: String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-playerOtw0 tag len hpl hpr pan time =
-  boundPlayer len time
-    ( defer \_ ->
-        pure
-          $ pannerT_ (tag <> "_panOtw0") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
-              ( gainT_' (tag <> "_gainOtw0")
-                  ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.0, Tuple 4.5 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
-                  ( highpassT_ (tag <> "_highpassOtw0")
-                      ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
-                      ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
-                      (playBufWithOffset_ (tag <> "_playerOtw0") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 0.0)
-                  )
-              )
-    )
-
-playerOtw1 :: String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-playerOtw1 tag len hpl hpr pan time =
-  boundPlayer len time
-    ( defer \_ ->
-        pure
-          $ pannerT_ (tag <> "_panOtw1") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
-              ( gainT_' (tag <> "_gainOtw1")
-                  ((epwf [ Tuple 0.0 0.3, Tuple 3.0 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
-                  ( highpassT_ (tag <> "_highpassOtw1")
-                      ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
-                      ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
-                      (playBufWithOffset_ (tag <> "_playerOtw1") ("Licks-onTheWingsOfEveryKiss5-l") 1.0 0.0)
-                  )
-              )
-    )
-
 vocalCompressor :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
 vocalCompressor tag = dynamicsCompressor_ tag (-24.0) (30.0) (7.0) (0.003) (0.25)
 
@@ -508,6 +626,25 @@ playerVoice tag name tos time =
                 )
       )
 
+playerLowCEnd :: Number -> List (AudioUnit D2)
+playerLowCEnd time =
+  let
+    len = fromMaybe 0.0 (M.lookup "lowC" soundsEndMap)
+  in
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ ("lowC" <> "_panLowCEnd") 0.0
+                ( gainT_' ("lowC" <> "_gainLowCEnd")
+                    (endGainFunction 0.94 time)
+                    ( vocalCompressor ("lowC" <> "_compressorLowCEnd")
+                        ( mainHighpass ("lowC" <> "_highpassLowCEnd")
+                            (playBufWithOffset_ ("lowC" <> "_playerLowCEnd") ("End-lowC") 1.0 0.0)
+                        )
+                    )
+                )
+      )
+
 playerVoiceEnd :: Number -> List (AudioUnit D2)
 playerVoiceEnd time =
   let
@@ -518,7 +655,7 @@ playerVoiceEnd time =
           pure
             $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
                 ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
-                    ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                    (endGainFunction 0.94 time)
                     ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
                         ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd")
                             (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
@@ -535,12 +672,12 @@ playerVoiceIASM time =
     boundPlayer (len + 1.0) time
       ( defer \_ ->
           pure
-            $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
-                ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
+            $ panner_ ("endVoice2" <> "_panVoiceEnd2") 0.0
+                ( gainT_' ("endVoice2" <> "_gainVoiceEnd2")
                     ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
-                    ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
-                        ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd")
-                            (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-inASentimentalMood") 1.0 0.0)
+                    ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd2")
+                        ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd2")
+                            (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
                         )
                     )
                 )
@@ -589,7 +726,7 @@ playerRoseLong tag' name pan hpf vol time =
   let
     tag = tag' <> name
   in
-    boundPlayer (4.0) time
+    boundPlayer (len) time
       ( defer \_ ->
           pure
             $ panner_ (tag <> "_panRoseLong") pan
@@ -659,10 +796,315 @@ playerKiss tag gd hpf time =
               )
     )
 
-conv440 :: Int -> Number
-conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
+playerIctus :: String -> String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerIctus tag name len vos ros tos time =
+  boundPlayer (len + 1.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ (tag <> "_panIctus") 0.0
+              ( gainT_' (tag <> "_gainIctus")
+                  ((epwf [ Tuple 0.0 0.0, Tuple 0.15 0.0, Tuple 1.0 vos, Tuple (len - 0.15) 0.0, Tuple len 0.0 ]) time)
+                  ( highpassT_ (tag <> "_highpassIctus") ((epwf [ Tuple 0.0 200.0, Tuple len 200.0 ]) time)
+                      ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                      (playBufWithOffset_ (tag <> "_playerIctus") (name) ros tos)
+                  )
+              )
+    )
 
-startAt = 0.0 :: Number
+data InASentimentalMood
+  = In
+  | A
+  | Sen
+  | Ti
+  | Men
+  | Tal
+  | Mood
+
+data Pitch
+  = C4
+  | Cis4
+  | D4
+  | Dis4
+  | E4
+  | F4
+  | Fis4
+  | G4
+  | Gis4
+  | A4
+  | B4
+  | C5
+  | Cis5
+  | D5
+  | Dis5
+  | E5
+  | F5
+  | Fis5
+  | G5
+  | Gis5
+  | A5
+  | B5
+  | C6
+  | Cis6
+  | D6
+
+p2s_0 :: Pitch -> String
+p2s_0 C4 = "C4"
+
+p2s_0 Cis4 = "Cis4"
+
+p2s_0 D4 = "D4"
+
+p2s_0 Dis4 = "Dis4"
+
+p2s_0 E4 = "E4"
+
+p2s_0 F4 = "F4"
+
+p2s_0 Fis4 = "Fis4"
+
+p2s_0 G4 = "G4"
+
+p2s_0 Gis4 = "Gis4"
+
+p2s_0 A4 = "A4"
+
+p2s_0 B4 = "B4"
+
+p2s_0 C5 = "C5"
+
+p2s_0 Cis5 = "Cis5"
+
+p2s_0 D5 = "D5"
+
+p2s_0 Dis5 = "Dis5"
+
+p2s_0 E5 = "E5"
+
+p2s_0 F5 = "F5"
+
+p2s_0 Fis5 = "Fis5"
+
+p2s_0 G5 = "G5"
+
+p2s_0 Gis5 = "Gis5"
+
+p2s_0 A5 = "A5"
+
+p2s_0 B5 = "B5"
+
+p2s_0 C6 = "C6"
+
+p2s_0 Cis6 = "Cis6"
+
+p2s_0 D6 = "D6"
+
+p2s_1 :: Pitch -> String
+p2s_1 C4 = "C4"
+
+p2s_1 Cis4 = "C#4"
+
+p2s_1 D4 = "D4"
+
+p2s_1 Dis4 = "D#4"
+
+p2s_1 E4 = "E4"
+
+p2s_1 F4 = "F4"
+
+p2s_1 Fis4 = "F#4"
+
+p2s_1 G4 = "G4"
+
+p2s_1 Gis4 = "G#4"
+
+p2s_1 A4 = "A4"
+
+p2s_1 B4 = "B4"
+
+p2s_1 C5 = "C5"
+
+p2s_1 Cis5 = "C#5"
+
+p2s_1 D5 = "D5"
+
+p2s_1 Dis5 = "D#5"
+
+p2s_1 E5 = "E5"
+
+p2s_1 F5 = "F5"
+
+p2s_1 Fis5 = "F#5"
+
+p2s_1 G5 = "G5"
+
+p2s_1 Gis5 = "G#5"
+
+p2s_1 A5 = "A5"
+
+p2s_1 B5 = "B5"
+
+p2s_1 C6 = "C6"
+
+p2s_1 Cis6 = "C#6"
+
+p2s_1 D6 = "D6"
+
+data CascadeEvent
+  = InEntry
+  | AEntry
+  | SenEntry
+  | TiEntry
+  | MenEntry
+  | TalEntry
+  | MoodEntry
+  | NoEvent
+
+data Cascade
+  = Cascade InASentimentalMood Pitch Number CascadeEvent
+
+data CSN
+  = CSN Cascade String Number
+
+cascades =
+  [ Cascade In G4 0.1 NoEvent
+  , Cascade In Fis4 0.1 NoEvent
+  , Cascade In E4 0.1 NoEvent
+  , Cascade In D4 0.1 NoEvent
+  , Cascade A A4 0.08 NoEvent
+  , Cascade A G4 0.08 NoEvent
+  , Cascade A Fis4 0.08 NoEvent
+  , Cascade A E4 0.08 NoEvent
+  , Cascade Sen B4 0.1 NoEvent
+  , Cascade Sen A4 0.1 NoEvent
+  , Cascade Sen G4 0.1 NoEvent
+  , Cascade Sen Fis4 0.1 NoEvent
+  , Cascade Sen E4 0.1 NoEvent
+  , Cascade Sen D4 0.1 NoEvent
+  , Cascade Ti D5 0.08 NoEvent
+  , Cascade Ti C5 0.08 NoEvent
+  , Cascade Ti B4 0.08 NoEvent
+  , Cascade Ti A4 0.08 NoEvent
+  , Cascade Ti G4 0.08 NoEvent
+  , Cascade Ti Fis4 0.08 NoEvent
+  , Cascade Men E5 0.1 NoEvent
+  , Cascade Men D5 0.1 NoEvent
+  , Cascade Men C5 0.1 NoEvent
+  , Cascade Men B4 0.1 NoEvent
+  , Cascade Men A4 0.1 NoEvent
+  , Cascade Men G4 0.1 NoEvent
+  , Cascade Tal G5 0.08 NoEvent
+  , Cascade Tal Fis5 0.08 NoEvent
+  , Cascade Tal E5 0.08 NoEvent
+  , Cascade Tal D5 0.08 NoEvent
+  , Cascade Tal C5 0.08 NoEvent
+  , Cascade Tal B4 0.08 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood A4 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood B5 0.35 NoEvent
+  , Cascade Mood A5 0.38 NoEvent
+  , Cascade Mood G5 0.41 NoEvent
+  , Cascade Mood Fis5 0.44 NoEvent
+  , Cascade Mood E5 0.47 NoEvent
+  , Cascade Mood D5 0.50 NoEvent
+  , Cascade Mood C5 0.53 NoEvent
+  , Cascade Mood B4 0.56 NoEvent
+  ] ::
+    Array Cascade
+
+c2s :: Cascade -> String
+c2s c@(Cascade word _ _ _) =
+  ( case word of
+      Mood -> ""
+      _ -> "Ramp-"
+  )
+    <> c2s_1 c
+    <> "-"
+    <> c2s_2 c
+    <> "-0-l"
+
+c2sShort :: Cascade -> String
+c2sShort c@(Cascade word _ _ _) =
+  c2s_1 c
+    <> "-"
+    <> c2s_2 c
+    <> "-0"
+
+c2s_1 :: Cascade -> String
+c2s_1 (Cascade word _ _ _) = case word of
+  In -> "In"
+  A -> "A"
+  Sen -> "Sen"
+  Ti -> "Ti"
+  Men -> "Men"
+  Tal -> "Tal"
+  Mood -> "Mood"
+
+c2s_2 :: Cascade -> String
+c2s_2 (Cascade word pitch _ _) = case word of
+  Mood -> p2s_1 pitch
+  _ -> p2s_0 pitch
+
+cascadesWithInfo =
+  map
+    ( \c@(Cascade word pitch t _) ->
+        let
+          cname = c2s c
+
+          nameShort = c2sShort c
+        in
+          CSN c (cname) case word of
+            Mood -> (fromSoundsMood (c2s_2 c)) 0 -- hardcode zero as quick solution
+            _ -> (fromSoundsRamp (nameShort))
+    )
+    cascades ::
+    Array CSN
+
+cascadesWithInfoInTime =
+  ( foldl
+      ( \{ acc, dur } (CSN (Cascade a b c marker) d e) ->
+          { acc: acc <> [ (CSN (Cascade a b (c + dur) marker) d e) ], dur: dur + c }
+      )
+      { acc: [], dur: 0.0 }
+      cascadesWithInfo
+  ) ::
+    { acc :: Array CSN, dur :: Number }
+
+startAt = 88.0 :: Number
 
 lightsStart = 28.0 :: Number
 
@@ -678,7 +1120,7 @@ scene time =
                     ( [ atT 0.0 $ playerVoice "Voice" "voice" startAt ]
                         <> [ atT 0.0 $ playerGuitar "Guitar" "guitar" startAt ]
                         <> ( map (atT (-1.0 * startAt))
-                              ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 4))
+                              ( {-(map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 4.0) * 0.05))) (range 0 6))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))) (range 0 3))
@@ -730,10 +1172,13 @@ scene time =
                                   
                                   <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
                                   <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
-                                  <> [ atT 91.0 $ playerVoiceIASM ]
-                                  <> [ atT 94.0 $ playerVoiceEnd ]
-                                  <> [ atT 94.0 $ playerGuitarEnd ]
-                                  <> [ atT 94.0 $ playerOrganOutro ]
+                                  <> -} [ atT 98.2 $ playerVoiceIASM ]
+                                  <> ( mapWithIndex (\i (CSN (Cascade a b c _) d e) -> atT (c + 98.0) $ playerIctus (d <> show i) d e 1.0 1.0 0.0) (cascadesWithInfoInTime.acc)
+                                    )
+                                  <> [ atT 101.1 $ playerLowCEnd ]
+                                  <> [ atT 107.0 $ playerVoiceEnd ]
+                                  <> [ atT 107.0 $ playerGuitarEnd ]
+                                  <> [ atT 107.0 $ playerOrganOutro ]
                               )
                           )
                     )
