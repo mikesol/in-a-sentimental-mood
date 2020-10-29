@@ -5,6 +5,7 @@ import Control.Promise (toAffE)
 import Data.Array (filter, foldl)
 import Data.Array (fold, head, last, range, span)
 import Data.Int (toNumber)
+import Data.Lazy (Lazy, defer, force)
 import Data.Lens (_1, _2, over, traversed)
 import Data.List ((:), List(..))
 import Data.Map as M
@@ -346,6 +347,9 @@ main =
 ----
 -- util
 --
+boundPlayer :: Number -> Number -> Lazy (List (AudioUnit D2)) -> List (AudioUnit D2)
+boundPlayer len time a = if (time) + kr >= 0.0 && time < (len) then force a else Nil
+
 atT :: forall a. Number -> (Number -> a) -> (Number -> a)
 atT t = lcmap (_ - t)
 
@@ -366,246 +370,268 @@ playerGuitar tag name tos time =
   let
     len = fromMaybe 0.0 (M.lookup name soundsFullMap)
   in
-    if time + kr >= 0.0 && time < (len + 1.0) then
-      pure
-        $ panner_ (tag <> "_panGuitar") 0.0
-            ( gainT_' (tag <> "_gainGuitar")
-                ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
-                ( highpass_ (tag <> "_highpassGuitar") 150.0 1.0
-                    (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panGuitar") 0.0
+                ( gainT_' (tag <> "_gainGuitar")
+                    ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
+                    ( highpass_ (tag <> "_highpassGuitar") 150.0 1.0
+                        (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
+                    )
                 )
-            )
-    else
-      Nil
+      )
 
 playerGuitar2 :: String -> Number -> List (AudioUnit D2)
 playerGuitar2 tag time =
-  if time + kr >= 0.0 && time < (15.0 + 1.0) then
-    pure
-      $ panner_ (tag <> "_panGuitar2") 0.0
-          ( gainT_' (tag <> "_gainGuitar2")
-              ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 15.0 1.0 ]) time)
-              ( highpass_ (tag <> "_highpassGuitar2") 150.0 1.0
-                  (playBuf_ (tag <> "_playerGuitar2") ("Licks-guitarFill-l") 1.0)
+  boundPlayer (15.0 + 1.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ (tag <> "_panGuitar2") 0.0
+              ( gainT_' (tag <> "_gainGuitar2")
+                  ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 15.0 1.0 ]) time)
+                  ( highpass_ (tag <> "_highpassGuitar2") 150.0 1.0
+                      (playBuf_ (tag <> "_playerGuitar2") ("Licks-guitarFill-l") 1.0)
+                  )
               )
-          )
-  else
-    Nil
+    )
 
 playerRodeFill :: String -> Number -> List (AudioUnit D2)
 playerRodeFill tag time =
-  if time + kr >= 0.0 && time < (14.0 + 1.0) then
-    pure
-      $ panner_ (tag <> "_panRodeFill") 0.0
-          ( gainT_' (tag <> "_gainRodeFill")
-              ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 14.0 1.0 ]) time)
-              (playBuf_ (tag <> "_playerRodeFill") ("Rode-rodeFill") 1.0)
-          )
-  else
-    Nil
+  boundPlayer (14.0 + 1.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ (tag <> "_panRodeFill") 0.0
+              ( gainT_' (tag <> "_gainRodeFill")
+                  ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 14.0 1.0 ]) time)
+                  (playBuf_ (tag <> "_playerRodeFill") ("Rode-rodeFill") 1.0)
+              )
+    )
 
 playerHarm :: String -> String -> Number -> Number -> Number -> List (AudioUnit D2)
 playerHarm tag name hp g time =
   let
     len = fromMaybe 0.0 (M.lookup name soundsHarmMap)
   in
-    if time + kr >= 0.0 && time < len then
-      pure
-        $ panner_ (tag <> "_panHarm") 0.0
-            ( gainT_' (tag <> "_gainHarm")
-                ((epwf [ Tuple 0.0 g, Tuple 1.0 g, Tuple len 0.0 ]) time)
-                ( highpass_ (tag <> "_highpassHarm") hp 1.0
-                    (playBufWithOffset_ (tag <> "_playerHarm") ("Harm-" <> name) 1.0 0.0)
+    boundPlayer len time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panHarm") 0.0
+                ( gainT_' (tag <> "_gainHarm")
+                    ((epwf [ Tuple 0.0 g, Tuple 1.0 g, Tuple len 0.0 ]) time)
+                    ( highpass_ (tag <> "_highpassHarm") hp 1.0
+                        (playBufWithOffset_ (tag <> "_playerHarm") ("Harm-" <> name) 1.0 0.0)
+                    )
                 )
-            )
-    else
-      Nil
+      )
 
 playerOtw0 :: String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
 playerOtw0 tag len hpl hpr pan time =
-  if time + kr >= 0.0 && time < len then
-    pure
-      $ pannerT_ (tag <> "_panOtw0") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
-          ( gainT_' (tag <> "_gainOtw0")
-              ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.0, Tuple 4.5 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
-              ( highpassT_ (tag <> "_highpassOtw0")
-                  ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
-                  ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
-                  (playBufWithOffset_ (tag <> "_playerOtw0") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 0.0)
+  boundPlayer len time
+    ( defer \_ ->
+        pure
+          $ pannerT_ (tag <> "_panOtw0") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
+              ( gainT_' (tag <> "_gainOtw0")
+                  ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.0, Tuple 4.5 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+                  ( highpassT_ (tag <> "_highpassOtw0")
+                      ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
+                      ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                      (playBufWithOffset_ (tag <> "_playerOtw0") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 0.0)
+                  )
               )
-          )
-  else
-    Nil
+    )
 
 playerOtw1 :: String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
 playerOtw1 tag len hpl hpr pan time =
-  if time + kr >= 0.0 && time < len then
-    pure
-      $ pannerT_ (tag <> "_panOtw1") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
-          ( gainT_' (tag <> "_gainOtw1")
-              ((epwf [ Tuple 0.0 0.3, Tuple 3.0 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
-              ( highpassT_ (tag <> "_highpassOtw1")
-                  ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
-                  ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
-                  (playBufWithOffset_ (tag <> "_playerOtw1") ("Licks-onTheWingsOfEveryKiss5-l") 1.0 0.0)
+  boundPlayer len time
+    ( defer \_ ->
+        pure
+          $ pannerT_ (tag <> "_panOtw1") ((epwf [ Tuple 0.0 pan, Tuple len ((-1.0) * pan) ]) time)
+              ( gainT_' (tag <> "_gainOtw1")
+                  ((epwf [ Tuple 0.0 0.3, Tuple 3.0 1.2, Tuple 5.0 0.0, Tuple len 0.0 ]) time)
+                  ( highpassT_ (tag <> "_highpassOtw1")
+                      ((epwf [ Tuple 0.0 hpl, Tuple len hpr ]) time)
+                      ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
+                      (playBufWithOffset_ (tag <> "_playerOtw1") ("Licks-onTheWingsOfEveryKiss5-l") 1.0 0.0)
+                  )
               )
-          )
-  else
-    Nil
+    )
 
 vocalCompressor :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
 vocalCompressor tag = dynamicsCompressor_ tag (-24.0) (30.0) (7.0) (0.003) (0.25)
+
+mainHighpass :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
+mainHighpass tag = highpass_ tag 150.0 1.0
 
 playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerVoice tag name tos time =
   let
     len = fromMaybe 0.0 (M.lookup name soundsFullMap)
   in
-    if time + kr >= 0.0 && time < (len + 1.0) then
-      pure
-        $ panner_ (tag <> "_panVoice") 0.0
-            ( gainT_' (tag <> "_gainVoice")
-                ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
-                ( vocalCompressor (tag <> "_compressorVoice")
-                    ( highpass_ (tag <> "_highpassVoice") 150.0 1.0
-                        (playBufWithOffset_ (tag <> "_playerVoice") ("Full-" <> name) 1.0 tos)
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panVoice") 0.0
+                ( gainT_' (tag <> "_gainVoice")
+                    ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                    ( vocalCompressor (tag <> "_compressorVoice")
+                        ( mainHighpass (tag <> "_highpassVoice")
+                            (playBufWithOffset_ (tag <> "_playerVoice") ("Full-" <> name) 1.0 tos)
+                        )
                     )
                 )
-            )
-    else
-      Nil
+      )
 
 playerVoiceEnd :: Number -> List (AudioUnit D2)
 playerVoiceEnd time =
   let
     len = fromMaybe 0.0 (M.lookup "endVoice2" soundsEndMap)
   in
-    if time + kr >= 0.0 && time < (len + 1.0) then
-      pure
-        $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
-            ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
-                ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
-                ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
-                    ( highpass_ ("endVoice2" <> "_highpassVoiceEnd") 150.0 1.0
-                        (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
+                ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
+                    ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                    ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
+                        ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd")
+                            (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
+                        )
                     )
                 )
-            )
-    else
-      Nil
+      )
+
+playerVoiceIASM :: Number -> List (AudioUnit D2)
+playerVoiceIASM time =
+  let
+    len = fromMaybe 0.0 (M.lookup "endVoice2" soundsEndMap)
+  in
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
+                ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
+                    ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                    ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
+                        ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd")
+                            (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-inASentimentalMood") 1.0 0.0)
+                        )
+                    )
+                )
+      )
 
 playerLights :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
 playerLights tag' name prate hpf vol time =
-  if time + kr >= 0.0 && time < 4.0 then
-    let
-      tag = tag' <> name
-    in
-      pure
-        $ panner_ (tag <> "_panLights") 0.0
-            ( gainT_' (tag <> "_gainLights")
-                ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
-                ( vocalCompressor (tag <> "_compressorLights")
-                    ( highpass_ (tag <> "_highpassLights") hpf 1.0
-                        (playBufWithOffset_ (tag <> "_playerLights") (name) prate 0.0)
+  let
+    tag = tag' <> name
+  in
+    boundPlayer (4.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panLights") 0.0
+                ( gainT_' (tag <> "_gainLights")
+                    ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
+                    ( vocalCompressor (tag <> "_compressorLights")
+                        ( highpass_ (tag <> "_highpassLights") hpf 1.0
+                            (playBufWithOffset_ (tag <> "_playerLights") (name) prate 0.0)
+                        )
                     )
                 )
-            )
-  else
-    Nil
+      )
 
 playerRose :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
 playerRose tag' name pan hpf vol time =
-  if time + kr >= 0.0 && time < 4.0 then
-    let
-      tag = tag' <> name
-    in
-      pure
-        $ panner_ (tag <> "_panRose") pan
-            ( gainT_' (tag <> "_gainRose")
-                ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
-                ( vocalCompressor (tag <> "_compressorRose")
-                    ( highpass_ (tag <> "_highpassRose") hpf 1.0
-                        (playBufWithOffset_ (tag <> "_playerRose") (name) 1.0 0.0)
+  let
+    tag = tag' <> name
+  in
+    boundPlayer (4.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panRose") pan
+                ( gainT_' (tag <> "_gainRose")
+                    ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
+                    ( vocalCompressor (tag <> "_compressorRose")
+                        ( highpass_ (tag <> "_highpassRose") hpf 1.0
+                            (playBufWithOffset_ (tag <> "_playerRose") (name) 1.0 0.0)
+                        )
                     )
                 )
-            )
-  else
-    Nil
+      )
 
 playerRoseLong :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
 playerRoseLong tag' name pan hpf vol time =
-  if time + kr >= 0.0 && time < len then
-    let
-      tag = tag' <> name
-    in
-      pure
-        $ panner_ (tag <> "_panRoseLong") pan
-            ( gainT_' (tag <> "_gainRoseLong")
-                ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 4.7 vol, Tuple 7.8 0.0, Tuple len 0.0 ]) time)
-                ( vocalCompressor (tag <> "_compressorRoseLong")
-                    ( highpass_ (tag <> "_highpassRoseLong") hpf 1.0
-                        (playBufWithOffset_ (tag <> "_playerRoseLong") ("Bridge-" <> name <> "-l") 1.0 0.0)
+  let
+    tag = tag' <> name
+  in
+    boundPlayer (4.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panRoseLong") pan
+                ( gainT_' (tag <> "_gainRoseLong")
+                    ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 4.7 vol, Tuple 7.8 0.0, Tuple len 0.0 ]) time)
+                    ( vocalCompressor (tag <> "_compressorRoseLong")
+                        ( highpass_ (tag <> "_highpassRoseLong") hpf 1.0
+                            (playBufWithOffset_ (tag <> "_playerRoseLong") ("Bridge-" <> name <> "-l") 1.0 0.0)
+                        )
                     )
                 )
-            )
-  else
-    Nil
+      )
   where
   len = (fromSoundsBridge name)
 
 playerSAS :: String -> String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
 playerSAS tag' name len pan hpf vol time =
-  if time + kr >= 0.0 && time < len then
-    let
-      tag = tag' <> name
-    in
-      pure
-        $ panner_ (tag <> "_panSAS") pan
-            ( gainT_' (tag <> "_gainSAS")
-                ((epwf [ Tuple 0.0 0.0, Tuple (0.12) vol, Tuple (len - 0.3) vol, Tuple len 0.0 ]) time)
-                ( vocalCompressor (tag <> "_compressorSAS")
-                    ( highpass_ (tag <> "_highpassSAS") hpf 1.0
-                        (playBufWithOffset_ (tag <> "_playerSAS") (name) 1.0 0.0)
+  let
+    tag = tag' <> name
+  in
+    boundPlayer (len) time
+      ( defer \_ ->
+          pure
+            $ panner_ (tag <> "_panSAS") pan
+                ( gainT_' (tag <> "_gainSAS")
+                    ((epwf [ Tuple 0.0 0.0, Tuple (0.12) vol, Tuple (len - 0.3) vol, Tuple len 0.0 ]) time)
+                    ( vocalCompressor (tag <> "_compressorSAS")
+                        ( highpass_ (tag <> "_highpassSAS") hpf 1.0
+                            (playBufWithOffset_ (tag <> "_playerSAS") (name) 1.0 0.0)
+                        )
                     )
                 )
-            )
-  else
-    Nil
+      )
 
 playerDrips :: String -> String -> Number -> Number -> Number -> List (AudioUnit D2)
 playerDrips tag' name len hpf time =
-  if time + kr >= 0.0 && time < len then
-    let
-      tag = tag' <> name
-    in
-      pure
-        $ pannerT_ (tag <> "_panDrips") ((epwf [ Tuple 0.0 0.2, Tuple 2.0 (-0.5), Tuple len 0.5 ]) time)
-            ( gainT_' (tag <> "_gainDrips")
-                ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.55, Tuple 2.0 0.3, Tuple 3.0 0.6, Tuple 4.5 0.0 ]) time)
-                ( vocalCompressor (tag <> "_compressorDrips")
-                    ( highpass_ (tag <> "_highpassDrips") hpf 1.0
-                        (playBufWithOffset_ (tag <> "_playerDrips") (name) 1.0 0.0)
+  let
+    tag = tag' <> name
+  in
+    boundPlayer (len) time
+      ( defer \_ ->
+          pure
+            $ pannerT_ (tag <> "_panDrips") ((epwf [ Tuple 0.0 0.2, Tuple 2.0 (-0.5), Tuple len 0.5 ]) time)
+                ( gainT_' (tag <> "_gainDrips")
+                    ((epwf [ Tuple 0.0 0.0, Tuple 1.0 0.55, Tuple 2.0 0.3, Tuple 3.0 0.6, Tuple 4.5 0.0 ]) time)
+                    ( vocalCompressor (tag <> "_compressorDrips")
+                        ( highpass_ (tag <> "_highpassDrips") hpf 1.0
+                            (playBufWithOffset_ (tag <> "_playerDrips") (name) 1.0 0.0)
+                        )
                     )
                 )
-            )
-  else
-    Nil
+      )
 
 playerKiss :: String -> Number -> Number -> Number -> List (AudioUnit D2)
 playerKiss tag gd hpf time =
-  if time + kr >= 0.0 && time < 5.0 then
-    pure
-      $ panner_ (tag <> "_panKiss") 0.0
-          ( gainT_' (tag <> "_gainKiss")
-              ((epwf [ Tuple 0.0 0.0, Tuple 0.15 0.0, Tuple 0.3 0.4, Tuple 0.5 0.2, Tuple 1.0 0.0 ]) time)
-              ( vocalCompressor (tag <> "_compressorKiss")
-                  ( highpass_ (tag <> "_highpassKiss") hpf 1.0
-                      (playBufWithOffset_ (tag <> "_playerKiss") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 2.5)
+  boundPlayer (5.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ (tag <> "_panKiss") 0.0
+              ( gainT_' (tag <> "_gainKiss")
+                  ((epwf [ Tuple 0.0 0.0, Tuple 0.15 0.0, Tuple 0.3 0.4, Tuple 0.5 0.2, Tuple 1.0 0.0 ]) time)
+                  ( vocalCompressor (tag <> "_compressorKiss")
+                      ( highpass_ (tag <> "_highpassKiss") hpf 1.0
+                          (playBufWithOffset_ (tag <> "_playerKiss") ("Licks-onTheWingsOfEveryKiss6-l") 1.0 2.5)
+                      )
                   )
               )
-          )
-  else
-    Nil
+    )
 
 conv440 :: Int -> Number
 conv440 i = 440.0 * (2.0 `pow` ((toNumber $ 0 + i) / 12.0))
