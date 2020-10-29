@@ -5,12 +5,10 @@ module Klank.Dev where
 -- • https://github.com/paf31/purescript-behaviors
 -- • https://github.com/mikesol/purescript-audio-behaviors
 import Prelude
-import Data.List ((:), List(..))
-import Data.NonEmpty ((:|))
 import Data.Tuple (Tuple(..))
 import Data.Typelevel.Num (D1)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioUnit, gain', playBuf, runInBrowser, sinOsc, speaker, speaker')
+import FRP.Behavior.Audio (AudioUnit, playBuf, runInBrowser, speaker')
 import Math (pi, sin, cos)
 import Type.Klank.Dev (Klank, klank, makeBuffersKeepingCache)
 
