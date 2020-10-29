@@ -1,5 +1,5 @@
 -- In a Sentimental Mood (https://en.wikipedia.org/wiki/In_a_Sentimental_Mood)
--- by Duke Elington
+-- by Duke Ellington
 -- lyrics by Manny Kurtz
 -- duration :: 4m30s
 -------------------------------
