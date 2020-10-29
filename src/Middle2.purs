@@ -104,21 +104,7 @@ soundsHarmMap :: M.Map String Number
 soundsHarmMap = M.fromFoldable soundsHarm
 
 soundsLicks =
-  [ Tuple "onTheWingsOfEveryKiss" 6.060408163265306
-  , Tuple "onTheWingsOfEveryKiss1" 5.944308390022676
-  , Tuple "onTheWingsOfEveryKiss2" 6.8382766439909295
-  , Tuple "onTheWingsOfEveryKiss3" 6.095238095238095
-  , Tuple "onTheWingsOfEveryKiss4" 6.623492063492064
-  , Tuple "onTheWingsOfEveryKiss5" 5.996553287981859
-  , Tuple "onTheWingsOfEveryKiss6" 6.182312925170068
-  , Tuple "onTheWingsOfEveryKiss7" 5.915283446712018
-  , Tuple "onTheWingsOfEveryKiss8" 6.362267573696145
-  , Tuple "dripsAMelodySoStrangeAndSweet" 6.582857142857143
-  , Tuple "guitarFill" 11.6
-  , Tuple "andSweet0" 3.722176870748299
-  , Tuple "andSweet1" 3.722176870748299
-  , Tuple "andSweet2" 3.722176870748299
-  , Tuple "andSweet3" 3.722176870748299
+  [ Tuple "guitarFill" 11.6
   ] ::
     Array (Tuple String Number)
 
@@ -188,26 +174,7 @@ soundsBridgeMap :: M.Map String Number
 soundsBridgeMap = M.fromFoldable soundsBridge
 
 soundsBridge2 =
-  [ Tuple "mhl-glitch-0" 5.787573696145125
-  , Tuple "mhl-glitch-2" 6.30421768707483
-  , Tuple "aLight" 1.4164172335600906
-  , Tuple "aLight1" 2.3219954648526078
-  , Tuple "aLight2" 1.253877551020408
-  , Tuple "mhl-glitch-3" 7.22140589569161
-  , Tuple "mhl-glitch-4" 2.211700680272109
-  , Tuple "mhl-glitch-5" 7.836734693877551
-  , Tuple "mhl-glitch-6-softcore" 2.316190476190476
-  , Tuple "dididi" 3.297233560090703
-  , Tuple "dididiA" 3.8080725623582765
-  , Tuple "divine-CA" 2.8792743764172335
-  , Tuple "divine-CisA" 2.5541950113378684
-  , Tuple "divine-DA" 2.089795918367347
-  , Tuple "divine-DC" 2.5541950113378684
-  , Tuple "divine-DE" 3.6687528344671203
-  , Tuple "divineA-Fis" 2.1884807256235828
-  , Tuple "vivivi" 3.6687528344671203
-  , Tuple "vivivi1" 5.38702947845805
-  , Tuple "myHeartsALighterThingSinceYouMadeThisNightAThingDivine" 10.727619047619047
+  [ Tuple "myHeartsALighterThingSinceYouMadeThisNightAThingDivine" 10.727619047619047
   ] ::
     Array (Tuple String Number)
 
@@ -287,67 +254,20 @@ soundsMood =
   , MoodIdx (Tuple "E3" 2) 1.5615419501133787
   , MoodIdx (Tuple "E3" 3) 3.2565986394557824
   , MoodIdx (Tuple "B3" 0) 5.793378684807256
-  --, MoodIdx (Tuple "B3" 1) 5.31156462585034
-  --, MoodIdx (Tuple "B3" 2) 4.481451247165533
-  --, MoodIdx (Tuple "B3" 3) 1.7240816326530612
   , MoodIdx (Tuple "E4" 0) 7.7148299319727895
-  --, MoodIdx (Tuple "E4" 1) 6.472562358276644
-  --, MoodIdx (Tuple "E4" 2) 7.302675736961452
-  --, MoodIdx (Tuple "E4" 3) 6.635102040816326
   , MoodIdx (Tuple "F#4" 0) 4.231836734693878
-  --, MoodIdx (Tuple "F#4" 1) 4.4117913832199545
-  --, MoodIdx (Tuple "F#4" 2) 4.6381859410430835
-  --, MoodIdx (Tuple "F#4" 3) 4.649795918367347
   , MoodIdx (Tuple "G4" 0) 4.818140589569161
-  --, MoodIdx (Tuple "G4" 1) 3.779047619047619
-  --, MoodIdx (Tuple "G4" 2) 2.7921995464852607
-  --, MoodIdx (Tuple "G4" 3) 3.5874829931972787
-  --, MoodIdx (Tuple "G4" 4) 5.491519274376417
   , MoodIdx (Tuple "A4" 0) 2.885079365079365
-  --, MoodIdx (Tuple "A4" 1) 3.221768707482993
-  --, MoodIdx (Tuple "A4" 2) 3.0203628117913834
-  --, MoodIdx (Tuple "A4" 3) 3.111473922902494
-  --, MoodIdx (Tuple "A4" 5) 8.765532879818593
   , MoodIdx (Tuple "B4" 0) 1.486077097505669
-  --, MoodIdx (Tuple "B4" 1) 2.948934240362812
-  --, MoodIdx (Tuple "B4" 2) 7.796099773242631
-  --, MoodIdx (Tuple "B4" 3) 5.741496598639456
   , MoodIdx (Tuple "C5" 0) 2.815419501133787
-  --, MoodIdx (Tuple "C5" 1) 0.6675736961451247
-  --, MoodIdx (Tuple "C5" 2) 5.955918367346939
-  --, MoodIdx (Tuple "C5" 3) 5.381224489795918
   , MoodIdx (Tuple "C#5" 0) 9.102222222222222
-  --, MoodIdx (Tuple "C#5" 1) 3.465578231292517
-  --, MoodIdx (Tuple "C#5" 2) 2.6238548752834467
-  --, MoodIdx (Tuple "C#5" 3) 4.284081632653061
   , MoodIdx (Tuple "D5" 0) 3.1579138321995464
-  --, MoodIdx (Tuple "D5" 1) 1.787936507936508
-  --, MoodIdx (Tuple "D5" 2) 8.695873015873016
-  --, MoodIdx (Tuple "D5" 3) 1.5615419501133787
   , MoodIdx (Tuple "D#5" 0) 4.284081632653061
-  --, MoodIdx (Tuple "D#5" 1) 6.780226757369615
-  --, MoodIdx (Tuple "D#5" 2) 6.757006802721088
-  --, MoodIdx (Tuple "D#5" 3) 1.8169614512471655
   , MoodIdx (Tuple "E5" 0) 8.59718820861678
-  --, MoodIdx (Tuple "E5" 1) 7.024036281179138
-  --, MoodIdx (Tuple "E5" 2) 7.7496598639455785
-  --, MoodIdx (Tuple "E5" 3) 5.932698412698413
   , MoodIdx (Tuple "F#5" 0) 9.189297052154195
-  --, MoodIdx (Tuple "F#5" 1) 9.549206349206349
-  --, MoodIdx (Tuple "F#5" 2) 5.143219954648526
-  --, MoodIdx (Tuple "F#5" 3) 8.858412698412698
   , MoodIdx (Tuple "G5" 0) 6.809251700680272
-  --, MoodIdx (Tuple "G5" 1) 4.8703854875283445
-  --, MoodIdx (Tuple "G5" 2) 5.282539682539682
-  --, MoodIdx (Tuple "G5" 3) 7.999274376417233
   , MoodIdx (Tuple "A5" 0) 4.14827664399093
-  --, MoodIdx (Tuple "A5" 1) 6.826666666666667
-  --, MoodIdx (Tuple "A5" 2) 17.925804988662133
-  --, MoodIdx (Tuple "A5" 3) 15.696689342403628
   , MoodIdx (Tuple "B5" 0) 2.3858503401360545
-  --, MoodIdx (Tuple "B5" 1) 3.465578231292517
-  --, MoodIdx (Tuple "B5" 2) 3.4771882086167802
-  --, MoodIdx (Tuple "B5" 3) 3.6048979591836736
   ] ::
     Array MoodIdx
 
@@ -1104,7 +1024,7 @@ cascadesWithInfoInTime =
   ) ::
     { acc :: Array CSN, dur :: Number }
 
-startAt = 88.0 :: Number
+startAt = 0.0 :: Number
 
 lightsStart = 28.0 :: Number
 
@@ -1120,7 +1040,7 @@ scene time =
                     ( [ atT 0.0 $ playerVoice "Voice" "voice" startAt ]
                         <> [ atT 0.0 $ playerGuitar "Guitar" "guitar" startAt ]
                         <> ( map (atT (-1.0 * startAt))
-                              ( {-(map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 4))
+                              ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 4.0) * 0.05))) (range 0 6))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
                                   <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))) (range 0 3))
@@ -1172,10 +1092,10 @@ scene time =
                                   
                                   <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
                                   <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
-                                  <> -} [ atT 98.2 $ playerVoiceIASM ]
+                                  <> [ atT 98.2 $ playerVoiceIASM ]
                                   <> ( mapWithIndex (\i (CSN (Cascade a b c _) d e) -> atT (c + 98.0) $ playerIctus (d <> show i) d e 1.0 1.0 0.0) (cascadesWithInfoInTime.acc)
                                     )
-                                  <> [ atT 101.1 $ playerLowCEnd ]
+                                  <> [ atT 102.0 $ playerLowCEnd ]
                                   <> [ atT 107.0 $ playerVoiceEnd ]
                                   <> [ atT 107.0 $ playerGuitarEnd ]
                                   <> [ atT 107.0 $ playerOrganOutro ]
