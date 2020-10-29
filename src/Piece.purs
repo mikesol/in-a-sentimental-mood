@@ -2,9 +2,11 @@ module Klank.IASM.Piece where
 
 import Data.Lazy
 import Prelude
+import Control.Parallel (parallel, sequential)
 import Control.Promise (toAffE)
 import Data.Array (filter, foldl, mapWithIndex)
 import Data.Array (fold, head, last, range, span)
+import Data.Either (either)
 import Data.Int (toNumber)
 import Data.Lens (_1, _2, over, traversed)
 import Data.List ((:), List(..))
@@ -16,11 +18,16 @@ import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
+import Effect (Effect)
+import Effect.Aff (Aff, Milliseconds(..), delay, try)
+import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
+import Effect.Exception (Error)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain, gain', gainT', gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
+import FRP.Behavior.Audio (AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain, gain', gainT', gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
 import Math (abs, cos, pi, pow, sin)
-import Type.Klank.Dev (Buffers, Klank, affable, klank, makeBuffersKeepingCache)
+import Type.Klank.Dev (Buffers, Klank, affable, klank)
 
 iasmEngineInfo =
   { msBetweenSamples: 100
@@ -262,6 +269,7 @@ soundsHarmMap = M.fromFoldable soundsHarm
 
 soundsLicks =
   [ Tuple "guitarFill" 11.6
+  , Tuple "onTheWingsOfEveryKiss6" 6.182312925170068
   ] ::
     Array (Tuple String Number)
 
@@ -274,7 +282,7 @@ soundsLicksMap = M.fromFoldable soundsLicks
 soundsEnd =
   [ Tuple "endVoice2" 90.0
   , Tuple "endGuitar2" 90.0
-  , Tuple "outroOrgan" 90.0
+  , Tuple "outroOrgan2" 90.0
   , Tuple "lowC" 23.0
   , Tuple "inASentimentalMood" 10.0
   ] ::
@@ -530,6 +538,13 @@ main =
                       )
                       soundsLicks
                   )
+                <> ( [ Tuple "Random-glass-bell-rubbing1" "Random/glass-bell-rubbing1.wav.mp3"
+                    , Tuple "Random-one-round-bellhit" "Random/one-round-bellhit.mp3"
+                    , Tuple "Random-wind_chimes" "Random/wind_chimes.aif.mp3"
+                    , Tuple "Random-reverse-bell-crash" "Random/reverse-bell-crash.wav.mp3"
+                    , Tuple "Random-tinkle-bright-bell" "Random/tinkle-bright-bell.wav.mp3"
+                    ]
+                  )
                 <> ( map
                       ( \i ->
                           let
@@ -605,6 +620,41 @@ main =
 ----
 -- util
 --
+loopDownload :: AudioContext -> String -> Aff BrowserAudioBuffer
+loopDownload ctx str =
+  res
+    >>= either
+        ( \e -> do
+            -- liftEffect $ log (show e)
+            -- a bit buggy, but it gets the job done...
+            delay (Milliseconds 20.0)
+            loopDownload ctx str
+        )
+        pure
+  where
+  res = try $ toAffE (decodeAudioDataFromUri ctx str)
+
+makeBuffersUsingCache :: (O.Object BrowserAudioBuffer -> Tuple (Array (Tuple String String)) (O.Object BrowserAudioBuffer)) -> AudioContext -> O.Object BrowserAudioBuffer -> (O.Object BrowserAudioBuffer -> Effect Unit) -> (Error -> Effect Unit) -> Effect Unit
+makeBuffersUsingCache bf ctx prev' =
+  affable do
+    sequential
+      ( O.union <$> (pure prev)
+          <*> ( sequence
+                $ O.fromFoldable
+                    ( map
+                        ( over _2
+                            (parallel <<< loopDownload ctx)
+                        )
+                        (filter (not <<< flip O.member prev <<< fst) newB)
+                    )
+            )
+      )
+  where
+  (Tuple newB prev) = bf prev'
+
+makeBuffersKeepingCache :: Array (Tuple String String) -> AudioContext -> O.Object BrowserAudioBuffer -> (O.Object BrowserAudioBuffer -> Effect Unit) -> (Error -> Effect Unit) -> Effect Unit
+makeBuffersKeepingCache = makeBuffersUsingCache <<< Tuple
+
 atT :: forall a. Number -> (Number -> a) -> (Number -> a)
 atT t = lcmap (_ - t)
 
@@ -1078,7 +1128,7 @@ tiDots os tg =
                         epwf
                           [ Tuple 0.0 0.0
                           , Tuple 1.0 1.0
-                          , Tuple l 1.0
+                          , Tuple l 0.0
                           ]
                     , hpff: epwf [ Tuple 0.0 1800.0, Tuple l 400.0 ]
                     , hpfq: epwf [ Tuple 0.0 1.0, Tuple l 1.0 ]
@@ -1341,14 +1391,17 @@ moodPlayer2 os tg =
     )
     ( ( map
           ( \i ->
-              MoodInfo "E3" (show i) 0 (lowOs + (1.2 * (toNumber i)))
-                100.0 -- (conv440 (-29))
-                bandpassT_
-                4.0
-                (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.2 1.0, Tuple (l - 0.15) 1.0, Tuple l 0.0 ])
-                (MoodPan 0.0 0.2 0.2)
+              let
+                x = (toNumber i * 0.1)
+              in
+                MoodInfo "E3" (show i) 0 (lowOs + (1.65 * (toNumber i)))
+                  100.0 -- (conv440 (-29))
+                  bandpassT_
+                  4.0
+                  (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.4 (1.0 - x), Tuple (l - 0.15) (1.0 - x), Tuple l 0.0 ])
+                  (MoodPan 0.0 0.2 0.2)
           )
-          (range 0 8)
+          (range 0 5)
       )
         <> [ MoodInfo "E4" "-" 0 0.8
               300.0 -- (conv440 (-17))
@@ -1366,43 +1419,43 @@ moodPlayer2 os tg =
               450.0 --(conv440 (22))
               bypassFilt
               4.0
-              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
               (MoodPan 0.1 0.5 (-0.7))
           , MoodInfo "A4" "-" 5 1.3
               500.0 --(conv440 (-12))
               bypassFilt
               4.0
-              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
               (MoodPan 0.05 1.0 0.05)
           , MoodInfo "B4" "-" 2 1.0
               550.0 --(conv440 (14))
               bypassFilt
               4.0
-              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
               (MoodPan 0.15 0.4 0.0)
           , MoodInfo "C5" "-" 2 1.6
               600.0 --(conv440 (3))
               bypassFilt
               4.0
-              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
               (MoodPan 0.6 0.6 (-0.8))
           , MoodInfo "D5" "-" 2 0.4
               650.0 -- (conv440 (-7))
               bypassFilt
               4.0
-              (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
+              (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
               (MoodPan 0.5 0.75 0.8)
           , MoodInfo "E5" "-" 0 0.3
               700.0 --(conv440 (7))
               bypassFilt
               3.0
-              (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
+              (\l -> epwf [ Tuple 0.0 0.2, Tuple (l - 1.0) 0.2, Tuple l 0.0 ])
               (MoodPan 0.9 0.15 (-0.2))
           , MoodInfo "F#5" "-" 0 0.3
               800.0 --(conv440 (9))
               bypassFilt
               2.0
-              (\l -> epwf [ Tuple 0.0 0.2, Tuple l 0.2 ])
+              (\l -> epwf [ Tuple 0.0 0.2, Tuple (l - 1.0) 0.2, Tuple l 0.0 ])
               (MoodPan 0.3 0.5 0.9)
           , MoodInfo "G5" "-" 3 0.5
               900.0 --(conv440 (10))
@@ -1424,6 +1477,95 @@ moodPlayer2 os tg =
 endGainFunction :: Number -> Number -> AudioParameter Number
 endGainFunction gl time = ((epwf [ Tuple 0.0 gl, Tuple 30.0 gl, Tuple 38.0 (gl / 2.0), Tuple 53.0 0.0 ]) time)
 
+playerWindChimes :: Number -> List (AudioUnit D2)
+playerWindChimes time =
+  boundPlayer (40.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ ("Random-wind_chimespn") 0.0
+              ( gainT_' ("Random-wind_chimesgn")
+                  ( ( epwf
+                        [ Tuple 0.0 0.0
+                        , Tuple 10.0 0.02
+                        , Tuple 20.0 0.005
+                        , Tuple 40.0 0.0
+                        ]
+                    )
+                      time
+                  )
+                  (playBufWithOffset_ ("Random-wind_chimespl") ("Random-wind_chimes") (1.0 + 0.1 + (sin $ 0.1 * pi * time)) 0.0)
+              )
+    )
+
+playerWindChimes2 :: Number -> List (AudioUnit D2)
+playerWindChimes2 time =
+  boundPlayer (10.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ ("Random-wind_chimespnx") 0.0
+              ( gainT_' ("Random-wind_chimesgnx")
+                  ( ( epwf
+                        [ Tuple 0.0 0.03
+                        , Tuple 8.0 0.03
+                        , Tuple 10.0 0.0
+                        ]
+                    )
+                      time
+                  )
+                  ( playBufT_ ("Random-wind_chimesplx") ("Random-wind_chimes")
+                      ( ( epwf
+                            [ Tuple 0.0 1.8
+                            , Tuple 8.0 3.0
+                            , Tuple 10.0 3.0
+                            ]
+                        )
+                          time
+                      )
+                  )
+              )
+    )
+
+playerGlassRub :: Number -> List (AudioUnit D2)
+playerGlassRub time =
+  boundPlayer (19.8) time
+    ( defer \_ ->
+        pure
+          $ panner_ ("glassRubPanner") 0.0
+              ( gainT_' ("glassRubGain")
+                  ( ( epwf
+                        [ Tuple 0.0 0.0
+                        , Tuple 10.0 0.05
+                        , Tuple 11.0 0.005
+                        , Tuple 12.0 0.07
+                        , Tuple 13.0 0.01
+                        , Tuple 16.0 0.15
+                        , Tuple 19.8 0.0
+                        ]
+                    )
+                      time
+                  )
+                  (playBufWithOffset_ ("glassRubPlay") ("Random-glass-bell-rubbing1") 1.0 0.0)
+              )
+    )
+
+playerBellHit :: Number -> List (AudioUnit D2)
+playerBellHit time =
+  boundPlayer (5.0) time
+    ( defer \_ ->
+        pure
+          $ panner_ ("bhglassRubPanner") 0.0
+              ( gainT_' ("bhglassRubGain")
+                  ( ( epwf
+                        [ Tuple 0.0 0.05
+                        , Tuple 5.0 0.00
+                        ]
+                    )
+                      time
+                  )
+                  (playBufWithOffset_ ("bhglassRubPlay") ("Random-one-round-bellhit") 1.0 0.0)
+              )
+    )
+
 playerGuitar :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerGuitar tag name tos time =
   let
@@ -1434,7 +1576,7 @@ playerGuitar tag name tos time =
           pure
             $ panner_ (tag <> "_panGuitar") 0.0
                 ( gainT_' (tag <> "_gainGuitar")
-                    ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
+                    ((epwf [ Tuple 0.0 guitarGain, Tuple len guitarGain ]) time)
                     (playBufWithOffset_ (tag <> "_playerGuitar") ("Full-" <> name) 1.0 tos)
                 )
       )
@@ -1449,7 +1591,7 @@ playerGuitarEnd time =
           pure
             $ panner_ ("guitarEnd" <> "_panGuitarEnd") 0.0
                 ( gainT_' ("guitarEnd" <> "_panGuitarEnd")
-                    (endGainFunction 0.94 time)
+                    (endGainFunction guitarGain time)
                     (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
                 )
       )
@@ -1457,15 +1599,15 @@ playerGuitarEnd time =
 playerOrganOutro :: Number -> List (AudioUnit D2)
 playerOrganOutro time =
   let
-    len = fromMaybe 0.0 (M.lookup "outroOrgan" soundsEndMap)
+    len = fromMaybe 0.0 (M.lookup "outroOrgan2" soundsEndMap)
   in
     boundPlayer (len + 1.0) time
       ( defer \_ ->
           pure
-            $ panner_ ("outroOrgan" <> "-outroOrgan") 0.0
-                ( gainT_' ("outroOrgan" <> "-outroOrgan")
+            $ panner_ ("outroOrgan2" <> "-outroOrgan2") 0.0
+                ( gainT_' ("outroOrgan2" <> "-outroOrgan2")
                     (endGainFunction 0.94 time)
-                    (playBufWithOffset_ ("outroOrgan" <> "_playerGuitar") ("End-outroOrgan") 1.0 0.0)
+                    (playBufWithOffset_ ("outroOrgan2" <> "_playerGuitar") ("End-outroOrgan2") 1.0 0.0)
                 )
       )
 
@@ -1476,7 +1618,7 @@ playerGuitar2 tag time =
         pure
           $ panner_ (tag <> "_panGuitar2") 0.0
               ( gainT_' (tag <> "_gainGuitar2")
-                  ((epwf [ Tuple 0.0 0.4, Tuple 0.2 1.0, Tuple 15.0 1.0 ]) time)
+                  ((epwf [ Tuple 0.0 0.4, Tuple 0.2 guitarGain, Tuple 15.0 guitarGain ]) time)
                   (playBuf_ (tag <> "_playerGuitar2") ("Licks-guitarFill-l") 1.0)
               )
     )
@@ -1510,11 +1652,18 @@ playerHarm tag name hp g time =
                 )
       )
 
+vocalCompressorA :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
+vocalCompressorA tag = dynamicsCompressor_ tag (-24.0) (30.0) (7.0) (0.003) (0.25)
+
 vocalCompressor :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
-vocalCompressor tag = dynamicsCompressor_ tag (-24.0) (30.0) (7.0) (0.003) (0.25)
+vocalCompressor _ = identity
 
 mainHighpass :: forall ch. Pos ch => String -> AudioUnit ch -> AudioUnit ch
 mainHighpass tag = highpass_ tag 150.0 1.0
+
+vocalGain = 0.8 :: Number
+
+guitarGain = 0.81 :: Number
 
 playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerVoice tag name tos time =
@@ -1526,7 +1675,7 @@ playerVoice tag name tos time =
           pure
             $ panner_ (tag <> "_panVoice") 0.0
                 ( gainT_' (tag <> "_gainVoice")
-                    ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                    ((epwf [ Tuple 0.0 vocalGain, Tuple len vocalGain ]) time)
                     ( vocalCompressor (tag <> "_compressorVoice")
                         ( mainHighpass (tag <> "_highpassVoice")
                             (playBufWithOffset_ (tag <> "_playerVoice") ("Full-" <> name) 1.0 tos)
@@ -1564,7 +1713,7 @@ playerVoiceEnd time =
           pure
             $ panner_ ("endVoice2" <> "_panVoiceEnd") 0.0
                 ( gainT_' ("endVoice2" <> "_gainVoiceEnd")
-                    (endGainFunction 0.94 time)
+                    (endGainFunction vocalGain time)
                     ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd")
                         ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd")
                             (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
@@ -1583,7 +1732,7 @@ playerVoiceIASM time =
           pure
             $ panner_ ("endVoice2" <> "_panVoiceEnd2") 0.0
                 ( gainT_' ("endVoice2" <> "_gainVoiceEnd2")
-                    ((epwf [ Tuple 0.0 0.94, Tuple len 0.94 ]) time)
+                    ((epwf [ Tuple 0.0 vocalGain, Tuple len vocalGain ]) time)
                     ( vocalCompressor ("endVoice2" <> "_compressorVoiceEnd2")
                         ( mainHighpass ("endVoice2" <> "_highpassVoiceEnd2")
                             (playBufWithOffset_ ("endVoice2" <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
@@ -1712,7 +1861,7 @@ playerIctus tag name len vos ros tos time =
         pure
           $ panner_ (tag <> "_panIctus") 0.0
               ( gainT_' (tag <> "_gainIctus")
-                  ((epwf [ Tuple 0.0 0.0, Tuple 0.15 0.0, Tuple 1.0 vos, Tuple (len - 0.15) 0.0, Tuple len 0.0 ]) time)
+                  ((epwf [ Tuple 0.0 1.0, Tuple (len - 0.15) 0.0, Tuple len 0.0 ]) time)
                   ( highpassT_ (tag <> "_highpassIctus") ((epwf [ Tuple 0.0 200.0, Tuple len 200.0 ]) time)
                       ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
                       (playBufWithOffset_ (tag <> "_playerIctus") (name) ros tos)
@@ -1875,32 +2024,27 @@ data CSN
   = CSN Cascade String Number
 
 cascades =
-  [ Cascade In G4 0.1 NoEvent
-  , Cascade In Fis4 0.1 NoEvent
-  , Cascade In E4 0.1 NoEvent
+  [ Cascade In G4 0.13 NoEvent
+  , Cascade In Fis4 0.13 NoEvent
+  , Cascade In E4 0.14 NoEvent
   , Cascade In D4 0.1 NoEvent
-  , Cascade A A4 0.08 NoEvent
-  , Cascade A G4 0.08 NoEvent
-  , Cascade A Fis4 0.08 NoEvent
-  , Cascade A E4 0.08 NoEvent
-  , Cascade Sen B4 0.1 NoEvent
-  , Cascade Sen A4 0.1 NoEvent
-  , Cascade Sen G4 0.1 NoEvent
-  , Cascade Sen Fis4 0.1 NoEvent
-  , Cascade Sen E4 0.1 NoEvent
-  , Cascade Sen D4 0.1 NoEvent
-  , Cascade Ti D5 0.08 NoEvent
-  , Cascade Ti C5 0.08 NoEvent
-  , Cascade Ti B4 0.08 NoEvent
-  , Cascade Ti A4 0.08 NoEvent
-  , Cascade Ti G4 0.08 NoEvent
-  , Cascade Ti Fis4 0.08 NoEvent
-  , Cascade Men E5 0.1 NoEvent
-  , Cascade Men D5 0.1 NoEvent
-  , Cascade Men C5 0.1 NoEvent
-  , Cascade Men B4 0.1 NoEvent
-  , Cascade Men A4 0.1 NoEvent
-  , Cascade Men G4 0.1 NoEvent
+  , Cascade A A4 0.12 NoEvent
+  , Cascade A G4 0.12 NoEvent
+  , Cascade A Fis4 0.11 NoEvent
+  , Cascade Sen B4 0.15 NoEvent
+  , Cascade Sen A4 0.15 NoEvent
+  , Cascade Sen G4 0.15 NoEvent
+  , Cascade Sen Fis4 0.15 NoEvent
+  , Cascade Ti D5 0.1 NoEvent
+  , Cascade Ti C5 0.1 NoEvent
+  , Cascade Ti B4 0.1 NoEvent
+  , Cascade Ti A4 0.09 NoEvent
+  , Cascade Ti G4 0.09 NoEvent
+  , Cascade Men E5 0.12 NoEvent
+  , Cascade Men D5 0.12 NoEvent
+  , Cascade Men C5 0.12 NoEvent
+  , Cascade Men B4 0.12 NoEvent
+  , Cascade Men A4 0.12 NoEvent
   , Cascade Tal G5 0.08 NoEvent
   , Cascade Tal Fis5 0.08 NoEvent
   , Cascade Tal E5 0.08 NoEvent
@@ -2015,9 +2159,12 @@ cascadesWithInfoInTime =
 
 startAt = 24.0 :: Number
 
-lightsStart = 28.0 :: Number
+lightsStart = 27.5 :: Number
 
 roseMult = 1.2 :: Number
+
+sceneA :: Number -> Behavior (AudioUnit D2)
+sceneA time = pure $ speaker' (playBuf ("Windchime-" <> "Glass---Jangle-1" <> "-l") 1.0)
 
 scene :: Number -> Behavior (AudioUnit D2)
 scene time =
@@ -2032,6 +2179,10 @@ scene time =
                             , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
                             , atT 9.0 $ oscSimpl "AOsc" 18.0 (conv440 (-12))
                             , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
+                            , atT 8.5 $ playerGlassRub
+                            , atT 0.5 $ playerWindChimes
+                            , atT 15.1 $ playerWindChimes2
+                            , atT 23.5 $ oscSimpl "FoundationOsc" 7.0 (conv440 (-17))
                             , atT 11.0 $ oscSimpl "SenOsc" 15.0 (conv440 (-10))
                             , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
                             , atT 15.5 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
@@ -2062,9 +2213,9 @@ scene time =
                               ( ( [ atT startAt $ playerVoice "Voice" "voice" 0.0 ]
                                     <> [ atT startAt $ playerGuitar "Guitar" "guitar" 0.0 ]
                                     <> ( map (atT (startAt))
-                                          ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 4))
-                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 4.0) * 0.05))) (range 0 6))
-                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 2.0) * 0.05))) (range 0 4))
+                                          ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 6))
+                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 5.0) * 0.05))) (range 0 7))
+                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 3.0) * 0.05))) (range 0 4))
                                               <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))) (range 0 3))
                                               <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.2 + (nf * 0.9)) $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))) (range 0 1))
                                               <> [ atT 62.8 $ playerRose ("rose0") "Bridge-rose3-l" 0.7 (2000.0) (0.7 * roseMult)
