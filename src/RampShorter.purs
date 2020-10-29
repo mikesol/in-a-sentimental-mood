@@ -1,4 +1,4 @@
-module Klank.IASM.Ramp where
+module Klank.IASM.RampShorter where
 
 import Prelude
 import Control.Promise (toAffE)
@@ -760,113 +760,75 @@ data CSN
   = CSN Cascade String Number
 
 cascades =
-  [ Cascade In G4 0.2 InEntry
-  , Cascade In Fis4 0.2 NoEvent
-  , Cascade In E4 0.2 NoEvent
-  , Cascade In D4 0.2 NoEvent
-  , Cascade In G4 0.2 NoEvent
-  , Cascade In Fis4 0.2 NoEvent
-  , Cascade In E4 0.2 NoEvent
-  , Cascade In D4 0.2 NoEvent
-  , Cascade A A4 0.2 AEntry
-  , Cascade A G4 0.22 NoEvent
-  , Cascade A Fis4 0.24 NoEvent
-  , Cascade A E4 0.25 NoEvent
-  , Cascade A A4 0.25 NoEvent
-  , Cascade A G4 0.25 NoEvent
-  , Cascade A Fis4 0.25 NoEvent
-  , Cascade A E4 0.25 NoEvent
-  , Cascade Sen B4 0.25 SenEntry
-  , Cascade Sen A4 0.25 NoEvent
-  , Cascade Sen G4 0.25 NoEvent
-  , Cascade Sen Fis4 0.25 NoEvent
-  , Cascade Sen E4 0.25 NoEvent
-  , Cascade Sen B4 0.25 NoEvent
-  , Cascade Sen A4 0.25 NoEvent
-  , Cascade Sen G4 0.25 NoEvent
-  , Cascade Sen Fis4 0.25 NoEvent
-  , Cascade Sen E4 0.25 NoEvent
-  , Cascade Ti D5 0.25 TiEntry
-  , Cascade Ti C5 0.25 NoEvent
-  , Cascade Ti B4 0.25 NoEvent
-  , Cascade Ti A4 0.25 NoEvent
-  , Cascade Ti G4 0.25 NoEvent
-  , Cascade Ti Fis4 0.25 NoEvent
-  , Cascade Ti D5 0.25 NoEvent
-  , Cascade Ti C5 0.25 NoEvent
-  , Cascade Ti B4 0.25 NoEvent
-  , Cascade Ti A4 0.25 NoEvent
-  , Cascade Ti G4 0.25 NoEvent
-  , Cascade Ti Fis4 0.25 NoEvent
-  , Cascade Men E5 0.25 MenEntry
-  , Cascade Men D5 0.25 NoEvent
-  , Cascade Men C5 0.25 NoEvent
-  , Cascade Men B4 0.25 NoEvent
-  , Cascade Men A4 0.25 NoEvent
-  , Cascade Men G4 0.25 NoEvent
-  , Cascade Men E5 0.25 NoEvent
-  , Cascade Men D5 0.25 NoEvent
-  , Cascade Men C5 0.25 NoEvent
-  , Cascade Men B4 0.25 NoEvent
-  , Cascade Men A4 0.25 NoEvent
-  , Cascade Men G4 0.25 NoEvent
-  , Cascade Tal G5 0.25 TalEntry
-  , Cascade Tal Fis5 0.25 NoEvent
-  , Cascade Tal E5 0.25 NoEvent
-  , Cascade Tal D5 0.25 NoEvent
-  , Cascade Tal C5 0.25 NoEvent
-  , Cascade Tal B4 0.25 NoEvent
-  , Cascade Tal G5 0.25 NoEvent
-  , Cascade Tal Fis5 0.25 NoEvent
-  , Cascade Tal E5 0.25 NoEvent
-  , Cascade Tal D5 0.25 NoEvent
-  , Cascade Tal G5 0.25 NoEvent
-  , Cascade Tal Fis5 0.25 NoEvent
-  , Cascade Tal E5 0.25 NoEvent
-  , Cascade Tal D5 0.25 NoEvent
-  , Cascade Tal C5 0.25 NoEvent
-  , Cascade Tal B4 0.25 NoEvent
-  , Cascade Tal G5 0.29 NoEvent
-  , Cascade Tal Fis5 0.31 NoEvent
-  , Cascade Tal E5 0.33 NoEvent
-  , Cascade Tal D5 0.35 NoEvent
-  , Cascade Mood B5 0.37 MoodEntry
-  , Cascade Mood A5 0.35 NoEvent
-  , Cascade Mood G5 0.32 NoEvent
-  , Cascade Mood Fis5 0.30 NoEvent
-  , Cascade Mood E5 0.28 NoEvent
-  , Cascade Mood D5 0.25 NoEvent
-  , Cascade Mood C5 0.25 NoEvent
-  , Cascade Mood B4 0.25 NoEvent
-  , Cascade Mood B5 0.25 NoEvent
-  , Cascade Mood A5 0.25 NoEvent
-  , Cascade Mood G5 0.25 NoEvent
-  , Cascade Mood Fis5 0.25 NoEvent
-  , Cascade Mood E5 0.25 NoEvent
-  , Cascade Mood D5 0.25 NoEvent
-  , Cascade Mood C5 0.25 NoEvent
-  , Cascade Mood B4 0.25 NoEvent
-  , Cascade Mood A4 0.25 NoEvent
-  , Cascade Mood B5 0.25 NoEvent
-  , Cascade Mood A5 0.25 NoEvent
-  , Cascade Mood G5 0.25 NoEvent
-  , Cascade Mood Fis5 0.25 NoEvent
-  , Cascade Mood B5 0.25 NoEvent
-  , Cascade Mood A5 0.25 NoEvent
-  , Cascade Mood G5 0.25 NoEvent
-  , Cascade Mood Fis5 0.25 NoEvent
-  , Cascade Mood E5 0.25 NoEvent
-  , Cascade Mood D5 0.25 NoEvent
-  , Cascade Mood C5 0.25 NoEvent
-  , Cascade Mood B4 0.25 NoEvent
-  , Cascade Mood B5 0.25 NoEvent
-  , Cascade Mood A5 0.25 NoEvent
-  , Cascade Mood G5 0.25 NoEvent
-  , Cascade Mood Fis5 0.25 NoEvent
-  , Cascade Mood E5 0.25 NoEvent
-  , Cascade Mood D5 0.25 NoEvent
-  , Cascade Mood C5 0.25 NoEvent
-  , Cascade Mood B4 0.25 NoEvent
+  [ Cascade In G4 0.1 NoEvent
+  , Cascade In Fis4 0.1 NoEvent
+  , Cascade In E4 0.1 NoEvent
+  , Cascade In D4 0.1 NoEvent
+  , Cascade A A4 0.08 NoEvent
+  , Cascade A G4 0.08 NoEvent
+  , Cascade A Fis4 0.08 NoEvent
+  , Cascade A E4 0.08 NoEvent
+  , Cascade Sen B4 0.1 NoEvent
+  , Cascade Sen A4 0.1 NoEvent
+  , Cascade Sen G4 0.1 NoEvent
+  , Cascade Sen Fis4 0.1 NoEvent
+  , Cascade Sen E4 0.1 NoEvent
+  , Cascade Sen D4 0.1 NoEvent
+  , Cascade Ti D5 0.08 NoEvent
+  , Cascade Ti C5 0.08 NoEvent
+  , Cascade Ti B4 0.08 NoEvent
+  , Cascade Ti A4 0.08 NoEvent
+  , Cascade Ti G4 0.08 NoEvent
+  , Cascade Ti Fis4 0.08 NoEvent
+  , Cascade Men E5 0.1 NoEvent
+  , Cascade Men D5 0.1 NoEvent
+  , Cascade Men C5 0.1 NoEvent
+  , Cascade Men B4 0.1 NoEvent
+  , Cascade Men A4 0.1 NoEvent
+  , Cascade Men G4 0.1 NoEvent
+  , Cascade Tal G5 0.08 NoEvent
+  , Cascade Tal Fis5 0.08 NoEvent
+  , Cascade Tal E5 0.08 NoEvent
+  , Cascade Tal D5 0.08 NoEvent
+  , Cascade Tal C5 0.08 NoEvent
+  , Cascade Tal B4 0.08 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood A4 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
+  , Cascade Mood B5 0.1 NoEvent
+  , Cascade Mood A5 0.1 NoEvent
+  , Cascade Mood G5 0.1 NoEvent
+  , Cascade Mood Fis5 0.1 NoEvent
+  , Cascade Mood E5 0.1 NoEvent
+  , Cascade Mood D5 0.1 NoEvent
+  , Cascade Mood C5 0.1 NoEvent
+  , Cascade Mood B4 0.1 NoEvent
   , Cascade Mood B5 0.35 NoEvent
   , Cascade Mood A5 0.38 NoEvent
   , Cascade Mood G5 0.41 NoEvent
@@ -1023,22 +985,7 @@ scene time =
                 ( map ((#) time)
                     ( ( mapWithIndex (\i (CSN (Cascade a b c _) d e) -> atT (c + coff) $ playerIctus (d <> show i) d e 1.0 1.0 0.0) (cascadesWithInfoInTime.acc)
                       )
-                        <> [ atT (10.0) (\t -> if t > 10.0 then pure (gain_' "gso" 0.03 (pannerMono_ "pso" 0.0 (sinOsc_ "sso" (conv440 (-21))))) else Nil) ]
-                        <> [ atT (12.0) (\t -> if t > 10.0 then pure (gain_' "gso1" 0.03 (pannerMono_ "pso1" 0.0 (sinOsc_ "sso1" (conv440 (-24))))) else Nil) ]
-                        <> ( fold
-                              ( map
-                                  ( \(CSN (Cascade a b c marker) d e) -> case marker of
-                                      InEntry -> [ atT (c + coff + 0.03) playerG1 ]
-                                      AEntry -> [ atT (c + coff + 0.2) playerA1 ]
-                                      SenEntry -> [ atT (c + coff) playerB1 ]
-                                      TiEntry -> [ atT (c + coff) playerD2 ]
-                                      MenEntry -> [ atT (c + coff) playerE2 ]
-                                      TalEntry -> [ atT (c + coff) playerG2 ]
-                                      _ -> []
-                                  )
-                                  cascadesWithInfoInTime.acc
-                              )
-                          )
+                        <> [ atT (6.5) (\t -> if t > 0.0 then pure $ pannerMono_ "pm01" 0.0 (gainT_' "xyz" ((epwf [ Tuple 0.0 0.0, Tuple 8.0 0.03 ]) time) (sinOsc_ "sso1" (conv440 (-24)))) else Nil) ]
                     )
                 )
         )
