@@ -1,7 +1,7 @@
--- In a Sentimental Mood
+-- In a Sentimental Mood (https://en.wikipedia.org/wiki/In_a_Sentimental_Mood)
 -- by Duke Elington
 -- lyrics by Manny Kurtz
--- duration :: 3m58s
+-- duration :: 4m30s
 -------------------------------
 ---------- README -------------
 -- this piece is arranged on klank.dev
@@ -1817,9 +1817,9 @@ vocalGain = 0.75 :: Number
 
 guitarGain = 0.7 :: Number
 
-reverbBlend = 0.35 :: Number
+reverbBlend = 0.32 :: Number
 
-rawBlend = 0.65 :: Number
+dryBlend = 0.68 :: Number
 
 playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerVoice tag' name tos time =
@@ -1832,7 +1832,7 @@ playerVoice tag' name tos time =
                         (vx (tag' <> "withReverb"))
                     )
                 )
-                  + (gain_' ("verb'd_voice") rawBlend (vx (tag' <> "withoutReverb")))
+                  + (gain_' ("verb'd_voice") dryBlend (vx (tag' <> "withoutReverb")))
               )
     )
   where
@@ -1883,7 +1883,7 @@ playerVoiceEnd time =
                           (vx ("withReverb"))
                       )
                   )
-                    + (gain_' ("verb'd_voice") rawBlend (vx ("withoutReverb")))
+                    + (gain_' ("verb'd_voice") dryBlend (vx ("withoutReverb")))
                 )
               )
     )
@@ -1911,7 +1911,7 @@ playerVoiceIASM tag' hpf vol time =
                             (vx (tag' <> "withReverb"))
                         )
                     )
-                      + (gain_' (tag' <> "verb'd_voice") rawBlend (vx (tag' <> "withoutReverb")))
+                      + (gain_' (tag' <> "verb'd_voice") dryBlend (vx (tag' <> "withoutReverb")))
                   )
                 )
               )
@@ -2467,6 +2467,16 @@ scene time =
                                                     , atT 67.3 $ playerRose ("xrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
                                                     , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
                                                     , atT 67.9 $ playerRose ("xrose13") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+                                                    , atT 68.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.5 * roseMult)
+                                                    , atT 68.2 $ playerRose ("zxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+                                                    , atT 68.4 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.4 * roseMult)
+                                                    , atT 68.6 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.3 * roseMult)
+                                                    , atT 68.9 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.25 * roseMult)
+                                                    , atT 69.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.25 * roseMult)
+                                                    , atT 69.17 $ playerRose ("zxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+                                                    , atT 69.23 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.2 * roseMult)
+                                                    , atT 70.33 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.2 * roseMult)
+                                                    , atT 70.42 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.15 * roseMult)
                                                     -----------------------------
                                                     ]
                                                 )
