@@ -420,18 +420,7 @@ boundPlayer len time a = if (time) + kr >= 0.0 && time < (len) then force a else
 atT :: forall a. Number -> (Number -> a) -> (Number -> a)
 atT t = lcmap (_ - t)
 
-------------------------------
------------------------------
---------------------------
--- In
-type PlayerInOpts
-  = { tag :: String
-    , pan :: Number -> AudioParameter Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
-    }
-
+------------------
 endGainFunction :: Number -> Number -> AudioParameter Number
 endGainFunction gl time = ((epwf [ Tuple 0.0 gl, Tuple 30.0 gl, Tuple 38.0 (gl / 2.0), Tuple 53.0 0.0 ]) time)
 
