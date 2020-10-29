@@ -382,6 +382,23 @@ playerGuitar tag name tos time =
                 )
       )
 
+playerGuitarEnd :: Number -> List (AudioUnit D2)
+playerGuitarEnd time =
+  let
+    len = fromMaybe 0.0 (M.lookup "endGuitar2" soundsEndMap)
+  in
+    boundPlayer (len + 1.0) time
+      ( defer \_ ->
+          pure
+            $ panner_ ("guitarEnd" <> "_panGuitar") 0.0
+                ( gainT_' ("guitarEnd" <> "_gainGuitar")
+                    ((epwf [ Tuple 0.0 0.95, Tuple len 0.95 ]) time)
+                    ( highpass_ ("guitarEnd" <> "_highpassGuitar") 150.0 1.0
+                        (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
+                    )
+                )
+      )
+
 playerGuitar2 :: String -> Number -> List (AudioUnit D2)
 playerGuitar2 tag time =
   boundPlayer (15.0 + 1.0) time
@@ -704,6 +721,8 @@ scene time =
                                   
                                   <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
                                   <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
+                                  <> [ atT 91.0 $ playerVoiceIASM ]
+                                  <> [ atT 94.0 $ playerVoiceEnd ]
                               )
                           )
                     )
