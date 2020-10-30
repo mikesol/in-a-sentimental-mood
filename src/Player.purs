@@ -8,14 +8,14 @@ import Prelude
 import Data.Tuple (Tuple(..))
 import Data.Typelevel.Num (D1)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioUnit, playBuf, runInBrowser, speaker')
+import FRP.Behavior.Audio (AudioUnit, playBufWithOffset, runInBrowser, speaker')
 import Math (pi, sin, cos)
 import Type.Klank.Dev (Klank, klank, makeBuffersKeepingCache)
 
 scene :: Number -> Behavior (AudioUnit D1)
 scene time =
   pure
-    ( speaker' (playBuf "s-d" 0.7)
+    ( speaker' (playBufWithOffset "s-d" 1.0 32.0)
     )
   where
   rad = pi * time
@@ -26,6 +26,6 @@ main =
     { run = runInBrowser scene
     , buffers =
       makeBuffersKeepingCache
-        [ Tuple "s-d" "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/SingingBowls/Large---Strike-1.ogg"
+        [ Tuple "s-d" "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/Random/iasm.mp3"
         ]
     }

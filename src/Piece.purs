@@ -34,18 +34,19 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D2)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay, try)
+import Effect.Class.Console (log)
 import Effect.Exception (Error)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc_, speaker, speaker')
+import FRP.Behavior.Audio (AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc_, speaker, speaker')
 import Foreign.Object as O
 import Math (abs, cos, pi, pow, sin)
 import Type.Klank.Dev (Klank, affable, klank)
 
 iasmEngineInfo =
-  { msBetweenSamples: 100
-  , msBetweenPings: 95
+  { msBetweenSamples: 170
+  , msBetweenPings: 165
   , fastforwardLowerBound: 0.025
-  , rewindUpperBound: 2.0
+  , rewindUpperBound: 30.0
   , initialOffset: 0.5
   , doWebAudio: true
   } ::
@@ -564,6 +565,7 @@ main =
                     , Tuple "Random-wind_chimes" "Random/wind_chimes.aif.mp3"
                     , Tuple "Random-reverse-bell-crash" "Random/reverse-bell-crash.wav.mp3"
                     , Tuple "Random-tinkle-bright-bell" "Random/tinkle-bright-bell.wav.mp3"
+                    , Tuple "Random-iasm" "Random/iasm.mp3"
                     , Tuple "tiny-chimes-1" "Windchime/Smol-Metal---Jangle-6.ogg"
                     , Tuple "metal-chimes-1" "Windchime/Medium-Metal---Jangle-6.ogg"
                     , Tuple "mel-1" "TongueDrum/Melodic-1.ogg"
@@ -643,6 +645,7 @@ main =
         )
     , run = runInBrowser scene
     , engineInfo = iasmEngineInfo
+    , exporter = defaultExporter
     }
 
 ----
@@ -747,12 +750,18 @@ playerDrone tag name prate time =
     Nil
 
 oscSimpl :: String -> Number -> Number -> Number -> List (AudioUnit D2)
-oscSimpl tag end freq time =
-  if time + kr >= 0.0 && time < end then
+oscSimpl = oscSimpl' 0.01
+
+oscReallyLow :: String -> Number -> Number -> Number -> List (AudioUnit D2)
+oscReallyLow = oscSimpl' 0.002
+
+oscSimpl' :: Number -> String -> Number -> Number -> Number -> List (AudioUnit D2)
+oscSimpl' gn tag end freq time =
+  if time + kr >= 0.0 && time < (end + 1.0) then
     let
       (AudioParameter { param, timeOffset }) =
         ( epwf
-            [ Tuple 0.0 0.0, Tuple 3.0 (0.01), Tuple end 0.0 ]
+            [ Tuple 0.0 0.0, Tuple 3.0 (gn), Tuple end 0.0 ]
         )
           time
     in
@@ -905,7 +914,7 @@ aDots os tg =
                     , gain:
                         epwf
                           [ Tuple 0.0 0.0
-                          , Tuple 0.12 aGn
+                          , Tuple 0.23 aGn
                           , case art of
                               A_Normal -> Tuple l 0.0
                               A_Stacc -> Tuple 0.6 0.0
@@ -1549,6 +1558,26 @@ playerMel1 tag ratef vol time =
               )
     )
 
+playerOldie :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
+playerOldie tag ratef vol time =
+  boundPlayer (15.13) time
+    ( defer \_ ->
+        pure
+          $ ( gainT_' ("oldie-1-gn" <> tag)
+                ( ( epwf
+                      [ Tuple 0.0 0.0
+                      , Tuple 2.0 vol
+                      , Tuple 11.0 vol
+                      , Tuple 15.13 0.0
+                      ]
+                  )
+                    time
+                )
+                ( playBufWithOffset_ ("oldie-1-impl-0" <> tag) ("Random-iasm") (ratef time) 32.0
+                )
+            )
+    )
+
 playerCro :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
 playerCro tag ratef vol time =
   boundPlayer (18.0) time
@@ -1558,7 +1587,8 @@ playerCro tag ratef vol time =
               ( gainT_' ("crotales-1-gn" <> tag)
                   ( ( epwf
                         [ Tuple 0.0 0.0
-                        , Tuple 3.0 vol
+                        , Tuple 2.0 vol
+                        , Tuple 4.0 (vol / 4.0)
                         , Tuple 6.5 0.0
                         ]
                     )
@@ -1815,11 +1845,11 @@ mainHighpass tag = highpass_ tag 150.0 1.0
 
 vocalGain = 0.75 :: Number
 
-guitarGain = 0.7 :: Number
+guitarGain = 0.68 :: Number
 
-reverbBlend = 0.32 :: Number
+reverbBlend = 0.27 :: Number
 
-dryBlend = 0.68 :: Number
+dryBlend = 0.73 :: Number
 
 playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
 playerVoice tag' name tos time =
@@ -1892,7 +1922,7 @@ playerVoiceEnd time =
 
   vx tag =
     ( gainT_' ("endVoice2" <> tag <> "_gainVoiceEnd")
-        (endGainFunction vocalGain time)
+        (endGainFunction (vocalGain - 0.07) time)
         ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd")
             ( mainHighpass ("endVoice2" <> tag <> "_highpassVoiceEnd")
                 (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
@@ -1977,7 +2007,7 @@ playerRose tag' name pan hpf vol time =
           pure
             $ panner_ (tag <> "_panRose") pan
                 ( gainT_' (tag <> "_gainRose")
-                    ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
+                    ((epwf [ Tuple 0.0 0.2, Tuple 0.24 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
                     ( vocalCompressor (tag <> "_compressorRose")
                         ( highpass_ (tag <> "_highpassRose") hpf 1.0
                             (playBufWithOffset_ (tag <> "_playerRose") (name) 1.0 0.0)
@@ -2341,7 +2371,7 @@ cascadesWithInfoInTime =
 
 startAt = 24.0 :: Number
 
-eos = 1.93 :: Number
+eos = 0.9 :: Number
 
 lightsStart = 27.5 :: Number
 
@@ -2364,6 +2394,7 @@ scene time =
                             , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
                             , atT 9.0 $ oscSimpl "AOsc" 18.0 (conv440 (-12))
                             , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
+                            , atT 14.7 $ oscReallyLow "gOsc" 10.4 (conv440 (-26))
                             , atT 8.5 $ playerGlassRub
                             , atT 0.5 $ playerWindChimes
                             , atT 15.1 $ playerWindChimes2
@@ -2412,7 +2443,7 @@ scene time =
                                                 , atT 36.0 $ playerHarm "f-sharp0" "f-sharp" 1500.0 0.22
                                                 ]
                                               <> [ atT 62.8 $ playerRose ("rose0") "Bridge-rose3-l" 0.7 (2000.0) (1.0 * roseMult)
-                                                , atT 63.0 $ playerRose ("rose0") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
+                                                , atT 63.0 $ playerRose ("rose1") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
                                                 , atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) (0.8 * roseMult)
                                                 , atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
                                                 , atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
@@ -2427,15 +2458,15 @@ scene time =
                                                 , atT 67.9 $ playerRose ("rose13") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
                                                 -------------------------
                                                 -- , atT 68.95 $ playerRose ("seem1") "Bridge-rose2-l" 0.7 (1000.0) (0.6)
-                                                , atT 70.8 $ playerRose ("rose0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
-                                                , atT 71.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) 0.7
-                                                , atT 72.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
-                                                , atT 72.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) 0.4
+                                                , atT 70.8 $ playerRose ("rose-0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
+                                                , atT 71.5 $ playerRose ("rose-2") "Bridge-rose3-l" (0.2) (1400.0) 0.7
+                                                , atT 72.2 $ playerRose ("rose-3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
+                                                , atT 72.5 $ playerRose ("rose-4") "Bridge-rose3-l" (0.7) (1200.0) 0.4
                                                 -----------------------------
-                                                , atT 75.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6
-                                                , atT 76.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) 0.7
-                                                , atT 76.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
-                                                , atT 77.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) 0.65
+                                                , atT 75.9 $ playerRose ("rose-5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6
+                                                , atT 76.5 $ playerRose ("rose-6") "Bridge-rose3-l" (0.2) (1400.0) 0.7
+                                                , atT 76.9 $ playerRose ("rose-7") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
+                                                , atT 77.2 $ playerRose ("rose-8") "Bridge-rose3-l" (0.7) (1200.0) 0.65
                                                 ]
                                               -------------- seem
                                               
@@ -2454,7 +2485,7 @@ scene time =
                                                 ]
                                               <> ( map (atT 26.0)
                                                     [ atT 62.8 $ playerRose ("xrose0") "Bridge-rose3-l" 0.7 (2000.0) (1.0 * roseMult)
-                                                    , atT 63.0 $ playerRose ("xrose0") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
+                                                    , atT 63.0 $ playerRose ("xrose1") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
                                                     , atT 63.5 $ playerRose ("xrose2") "Bridge-rose3-l" (0.2) (1400.0) (0.8 * roseMult)
                                                     , atT 64.2 $ playerRose ("xrose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
                                                     , atT 64.5 $ playerRose ("xrose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
@@ -2466,25 +2497,23 @@ scene time =
                                                     , atT 66.9 $ playerRose ("xrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
                                                     , atT 67.3 $ playerRose ("xrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
                                                     , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                    , atT 67.9 $ playerRose ("xrose13") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                    , atT 68.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.5 * roseMult)
+                                                    , atT 67.9 $ playerRose ("xrose13") "Bridge-rose4-l" (0.2) (1900.0) (0.5 * roseMult)
+                                                    , atT 68.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (3000.0) (0.5 * roseMult)
                                                     , atT 68.2 $ playerRose ("zxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                    , atT 68.4 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.4 * roseMult)
+                                                    , atT 68.4 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1700.0) (0.4 * roseMult)
                                                     , atT 68.6 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.3 * roseMult)
-                                                    , atT 68.9 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.25 * roseMult)
-                                                    , atT 69.1 $ playerRose ("bzxrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.25 * roseMult)
-                                                    , atT 69.17 $ playerRose ("zbxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                    , atT 69.23 $ playerRose ("bzxrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.2 * roseMult)
-                                                    , atT 70.33 $ playerRose ("bzrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.2 * roseMult)
-                                                    , atT 70.42 $ playerRose ("bzxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.15 * roseMult)
+                                                    , atT 68.9 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.12 * roseMult)
+                                                    , atT 69.1 $ playerRose ("bzxrose42") "Bridge-rose2-l" (-0.7) (2400.0) (0.1 * roseMult)
+                                                    , atT 69.17 $ playerRose ("zbxrose531") "Bridge-rose4-l" (1.0) (900.0) (0.2 * roseMult)
+                                                    , atT 69.23 $ playerRose ("bzxrose11") "Bridge-rose3-l" (0.7) (1800.0) (0.07 * roseMult)
+                                                    , atT 70.33 $ playerRose ("bzrose-12") "Bridge-rose2-l" (-0.7) (1000.0) (0.04 * roseMult)
+                                                    , atT 70.42 $ playerRose ("bzxrose-13") "Bridge-rose4-l" (0.5) (2900.0) (0.02 * roseMult)
                                                     -----------------------------
                                                     ]
                                                 )
-                                              -- <> [ atT 89.3 $ playerSAS "drips0" "Bridge2-myHeartsALighterThingSinceYouMadeThisNightAThingDivine-l" 11.0 (-0.0) 1500.0 1.0]
-                                              
-                                              -- guitar fill
-                                              
-                                              <> [ atT 84.5 $ playerMetalC1 "mcla" (\t -> 1.0 + (0.1 * sin (0.1 * t * pi))) 0.08 ]
+                                              <> [ atT 85.2 $ playerOldie "1935" (\t -> 1.0 + (0.02 * (sin (pi * t * 0.2)))) 0.1
+                                                ]
+                                              <> [ atT 87.0 $ playerMetalC1 "mcla" (\t -> 1.0 + (0.1 * sin (0.1 * t * pi))) 0.08 ]
                                               <> [ atT 84.0 $ playerBowl "up" (\t -> (0.8 + (-0.01 * (sin $ pi * t)))) 0.2
                                                 , atT 84.0 $ playerBowl "down" (\t -> (0.8 + (-0.01 * (cos $ pi * t)))) 0.12
                                                 ]
@@ -2518,15 +2547,15 @@ scene time =
                                                     (\i (CSN (Cascade a b c _) d e) -> atT (c + 100.0) $ playerIctus (d <> show i) d e (min 0.9 (0.1 + 0.1 * (toNumber i))) (\_ -> 1.0) 0.0)
                                                     (cascadesWithInfoInTime.acc)
                                                 )
-                                              <> [ atT (98.6 + eos) $ playerLowEnd "a" "lowC" 0.4
-                                                , atT (100.7 + eos) $ playerLowEnd "b" "lowC" 0.4
+                                              <> [ atT (101.8) $ playerLowEnd "a" "lowC" 0.4
+                                                , atT (104.1) $ playerLowEnd "b" "lowC" 0.2
                                                 , atT 99.0 $ oscSimpl "cosc" 10.0 (conv440 (-33))
                                                 ]
                                               <> [ atT (107.0 + eos) $ playerVoiceEnd ]
                                               <> [ atT (107.0 + eos) $ playerGuitarEnd ]
                                               <> [ atT (107.0 + eos) $ playerOrganOutro ]
-                                              <> [ atT (121.6 + eos) $ playerSmol "tinychimesa" (\t -> 1.0 + ((-0.05 * t))) 0.08
-                                                , atT (121.9 + eos) $ playerSmol "tinychimesb" (\t -> 1.8 + ((-0.1 * t))) 0.03
+                                              <> [ atT (123.6 + eos) $ playerSmol "tinychimesa" (\t -> 1.0 + ((-0.05 * t))) 0.08
+                                                , atT (123.9 + eos) $ playerSmol "tinychimesb" (\t -> 1.8 + ((-0.1 * t))) 0.03
                                                 , atT (130.5 + eos) $ playerSmol "tinychimesc" (\t -> 1.0 + ((-0.05 * t))) 0.06
                                                 , atT (130.8 + eos) $ playerSmol "tinychimesd" (\t -> 1.8 + ((-0.1 * t))) 0.02
                                                 ]
