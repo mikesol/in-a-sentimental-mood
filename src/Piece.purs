@@ -6,7 +6,7 @@
 ---------- README -------------
 -- This piece is arranged on klank.dev using purescript-audio-behaviors
 --   at https://github.com/mikesol/purescript-audio-behaviors.
--- To see how the arrangement is put together, start from the function `scene` on line 2354.
+-- To see how the arrangement is put together, I'd recommend starting from the function `scene`.
 -- The arrangement is a series of events. any event can be commented out to mute
 --   and moved in time by changing the first argument to `atT`.
 -- The arrangement is also on github at https://github.com/mikesol/in-a-sentimental-mood
@@ -16,6 +16,7 @@
 module Klank.IASM.Piece where
 
 import Prelude
+import Color (rgb)
 import Control.Parallel (parallel, sequential)
 import Control.Promise (toAffE)
 import Data.Array (filter, foldl, mapWithIndex, fold, head, last, range, span)
@@ -25,31 +26,37 @@ import Data.Lazy (Lazy, defer, force)
 import Data.Lens (_1, _2, over, traversed)
 import Data.List ((:), List(..))
 import Data.Map as M
-import Data.Maybe (fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.NonEmpty ((:|))
 import Data.Profunctor (lcmap)
+import Data.Set (isEmpty)
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D2)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay, try)
-import Effect.Class.Console (log)
 import Effect.Exception (Error)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc_, speaker, speaker')
+import FRP.Behavior.Audio (AV(..), AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, CanvasInfo(..), EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
+import FRP.Behavior.Mouse (buttons, position)
+import FRP.Event.Mouse (Mouse, getMouse)
 import Foreign.Object as O
+import Graphics.Drawing (circle, fillColor, filled, text)
+import Graphics.Drawing.Font (bold, font, sansSerif)
 import Math (abs, cos, pi, pow, sin)
-import Type.Klank.Dev (Klank, affable, klank)
+import Type.Klank.Dev (Klank', affable, defaultEngineInfo, klank)
+import Web.HTML (window)
+import Web.HTML.Window (innerHeight, innerWidth)
 
 iasmEngineInfo =
-  { msBetweenSamples: 170
-  , msBetweenPings: 165
-  , fastforwardLowerBound: 0.025
-  , rewindUpperBound: 30.0
-  , initialOffset: 0.5
-  , doWebAudio: true
-  } ::
+  defaultEngineInfo
+    { msBetweenSamples = 190
+    , msBetweenPings = 185
+    , fastforwardLowerBound = 0.025
+    , rewindUpperBound = 0.4
+    , initialOffset = 0.5
+    } ::
     EngineInfo
 
 soundsIn =
@@ -242,7 +249,7 @@ soundsMoodMap :: M.Map String Number
 soundsMoodMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> show y) b) soundsMood)
 
 soundsFull =
-  [ Tuple "guitar" 100.0
+  [ Tuple "guitar2" 100.0
   , Tuple "voice" 100.0
   ] ::
     Array (Tuple String Number)
@@ -431,8 +438,21 @@ fromSoundsRamp i = fromMaybe 0.0 (M.lookup i soundsRampMap)
 soundsRampMap :: M.Map String Number
 soundsRampMap = M.fromFoldable soundsRamp
 
--- 0 3 5 7 11 14
-main :: Klank
+type IASMAccumulator
+  = { isClicked :: Boolean
+    }
+
+type IASMInteractiveInfo
+  = { isClicked :: Boolean
+    , justClicked :: Boolean
+    , pos :: Maybe { x :: Number, y :: Number }
+    , w :: Number
+    , h :: Number
+    , yr :: Number
+    , xr :: Number
+    }
+
+main :: Klank' IASMAccumulator
 main =
   klank
     { buffers =
@@ -643,7 +663,14 @@ main =
                   )
             )
         )
-    , run = runInBrowser scene
+    , accumulator = \res rej -> res { isClicked: false }
+    , run =
+      runInBrowser_ do
+        mouse <- getMouse
+        w <- window
+        width <- innerWidth w
+        height <- innerHeight w
+        pure (scene (toNumber width) (toNumber height) mouse)
     , engineInfo = iasmEngineInfo
     , exporter = defaultExporter
     }
@@ -737,8 +764,8 @@ type PlayerInOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
-playerDrone :: String -> String -> Number -> Number -> List (AudioUnit D2)
-playerDrone tag name prate time =
+playerDrone :: String -> String -> Number -> MusicalEvent
+playerDrone tag name prate time info =
   if time + kr >= 0.0 && time < 18.0 then
     pure
       $ pannerMono_ (tag <> "_panDrone") 0.0
@@ -749,14 +776,14 @@ playerDrone tag name prate time =
   else
     Nil
 
-oscSimpl :: String -> Number -> Number -> Number -> List (AudioUnit D2)
+oscSimpl :: String -> Number -> Number -> MusicalEvent
 oscSimpl = oscSimpl' 0.01
 
-oscReallyLow :: String -> Number -> Number -> Number -> List (AudioUnit D2)
+oscReallyLow :: String -> Number -> Number -> MusicalEvent
 oscReallyLow = oscSimpl' 0.002
 
-oscSimpl' :: Number -> String -> Number -> Number -> Number -> List (AudioUnit D2)
-oscSimpl' gn tag end freq time =
+oscSimpl' :: Number -> String -> Number -> Number -> MusicalEvent
+oscSimpl' gn tag end freq time info =
   if time + kr >= 0.0 && time < (end + 1.0) then
     let
       (AudioParameter { param, timeOffset }) =
@@ -774,8 +801,8 @@ oscSimpl' gn tag end freq time =
   else
     Nil
 
-playerIn :: Int -> (Number -> PlayerInOpts) -> Number -> List (AudioUnit D2)
-playerIn name' opts' time =
+playerIn :: Int -> (Number -> PlayerInOpts) -> MusicalEvent
+playerIn name' opts' time info =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMonoT_ (opts.tag <> "_panIn") (opts.pan time)
@@ -796,21 +823,24 @@ playerIn name' opts' time =
 
   name = "In-G4-" <> show name' <> "-l"
 
-simplIn :: Number -> Int -> String -> String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-simplIn os snd tg t2 ps pe fs fe =
+simplIn :: Number -> Int -> String -> String -> Number -> Number -> Number -> Number -> MusicalEvent
+simplIn os snd tg t2 ps pe fs fe time info@{ yr } =
   ( atT (0.0 + os)
-      $ playerIn snd
+      ( playerIn snd
           ( \l ->
               { tag: tg <> t2
               , pan: epwf [ Tuple 0.0 ps, Tuple l pe ]
               , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-              , hpff: epwf [ Tuple 0.0 fs, Tuple l fe ]
+              , hpff: epwf [ Tuple 0.0 (fs + (1000.0 * yr)), Tuple l (fe + (1000.0 * yr)) ]
               , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
               }
           )
+      )
+      time
+      info
   )
 
-fadeIn :: Number -> String -> Array (Number -> List (AudioUnit D2))
+fadeIn :: Number -> String -> ArrayOfEvents
 fadeIn os tg =
   [ simplIn (0.0 + os) 0 tg "i0" 0.6 0.0 4000.0 1700.0
   , simplIn (0.5 + os) 3 tg "i1" 0.6 (-0.1) 3500.0 1600.0
@@ -859,8 +889,8 @@ type PlayerAOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
-playerA :: Int -> (Number -> PlayerAOpts) -> Number -> List (AudioUnit D2)
-playerA name' opts' time =
+playerA :: Int -> (Number -> PlayerAOpts) -> MusicalEvent
+playerA name' opts' time info =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMonoT_ (opts.tag <> "_panA") (opts.pan time)
@@ -902,7 +932,7 @@ aMF = 1500.0 :: Number
 
 aGn = 2.6 :: Number
 
-aDots :: Number -> String -> Array (Number -> List (AudioUnit D2))
+aDots :: Number -> String -> ArrayOfEvents
 aDots os tg =
   map
     ( \(DotInfo x f y z art) ->
@@ -977,8 +1007,8 @@ type PlayerSenOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
-playerSen :: Int -> (Number -> PlayerSenOpts) -> Number -> List (AudioUnit D2)
-playerSen name' opts' time =
+playerSen :: Int -> (Number -> PlayerSenOpts) -> MusicalEvent
+playerSen name' opts' time info =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMonoT_ (opts.tag <> "_panSen") (opts.pan time)
@@ -1038,7 +1068,7 @@ senInfo =
   , SenInfo 102 4.2 0.0 SenRight 0.8 0.8
   ]
 
-senSpread :: Number -> String -> Array SenInfo -> Array (Number -> List (AudioUnit D2))
+senSpread :: Number -> String -> Array SenInfo -> ArrayOfEvents
 senSpread os tg si =
   map
     ( \(SenInfo x y o sd gs ge) ->
@@ -1076,7 +1106,7 @@ senEchoInfo =
   , SenEchoInfo 103 4.5 0.3 SenLeft
   ]
 
-senEcho :: Number -> String -> Array SenEchoInfo -> Array (Number -> List (AudioUnit D2))
+senEcho :: Number -> String -> Array SenEchoInfo -> ArrayOfEvents
 senEcho os tg sei =
   map
     ( \(SenEchoInfo x y o sd) ->
@@ -1104,7 +1134,7 @@ senEcho os tg sei =
     )
     sei
 
-senArr :: Number -> Array (Number -> List (AudioUnit D2))
+senArr :: Number -> ArrayOfEvents
 senArr os =
   ( (senSpread os "SenA" senInfo)
       <> (senEcho os "SenB" senEchoInfo)
@@ -1127,8 +1157,8 @@ type PlayerTiOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
-playerTi :: Int -> (Number -> PlayerTiOpts) -> Number -> List (AudioUnit D2)
-playerTi name' opts' time =
+playerTi :: Int -> (Number -> PlayerTiOpts) -> MusicalEvent
+playerTi name' opts' time info =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMono_ (opts.tag <> "_panTi") (opts.pan time)
@@ -1152,7 +1182,7 @@ playerTi name' opts' time =
 data TiInfo
   = TiInfo Int (Number -> Number)
 
-tiDots :: Number -> String -> Array (Number -> List (AudioUnit D2))
+tiDots :: Number -> String -> ArrayOfEvents
 tiDots os tg =
   map
     ( \(TiInfo x pf) ->
@@ -1190,8 +1220,8 @@ type PlayerMenOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
-playerMen :: Int -> (Number -> PlayerMenOpts) -> Number -> List (AudioUnit D2)
-playerMen name' opts' time =
+playerMen :: Int -> (Number -> PlayerMenOpts) -> MusicalEvent
+playerMen name' opts' time info =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMonoT_ (opts.tag <> "_panMen") (opts.pan time)
@@ -1219,7 +1249,7 @@ data MenDir
   = MenLeft
   | MenRight
 
-menPlayer1 :: Number -> String -> Array (Number -> List (AudioUnit D2))
+menPlayer1 :: Number -> String -> ArrayOfEvents
 menPlayer1 os tg =
   map
     ( \(MenInfo x y o sd) ->
@@ -1249,7 +1279,7 @@ menPlayer1 os tg =
     , MenInfo 3 0.0 0.0 MenRight
     ]
 
-menPlayer2 :: Number -> String -> Array (Number -> List (AudioUnit D2))
+menPlayer2 :: Number -> String -> ArrayOfEvents
 menPlayer2 os tg =
   map
     ( \(MenInfo x y o sd) ->
@@ -1303,8 +1333,8 @@ type PlayerTalOpts
     , hpfq :: Number -> AudioParameter Number
     }
 
-playerTal :: Int -> (Number -> PlayerTalOpts) -> Number -> List (AudioUnit D2)
-playerTal name' opts' time =
+playerTal :: Int -> (Number -> PlayerTalOpts) -> MusicalEvent
+playerTal name' opts' time info =
   if time + kr >= 0.0 && time < len then
     pure
       $ pannerMono_ (opts.tag <> "_panTal") (opts.pan time)
@@ -1328,13 +1358,10 @@ playerTal name' opts' time =
 data TalInfo
   = TalInfo Int Number Number (Number -> AudioParameter Number)
 
-playerTal_ :: Int -> (Number -> PlayerTalOpts) -> Number -> Behavior (AudioUnit D2)
-playerTal_ name opts time = pure $ speaker (zero :| playerTal name opts time)
-
 peak :: Number -> Array (Tuple Number Number)
 peak n = [ Tuple n 0.2, Tuple (n + 0.12) 1.0, Tuple (n + 0.23) 1.0, Tuple (n + 0.34) 0.2 ]
 
-talPlayer2 :: Number -> String -> Array (Number -> List (AudioUnit D2))
+talPlayer2 :: Number -> String -> ArrayOfEvents
 talPlayer2 os tg =
   map
     ( \(TalInfo x y o gf) ->
@@ -1372,8 +1399,8 @@ type PlayerMoodOpts
     , bpfq :: Number -> AudioParameter Number
     }
 
-playerMood :: String -> Int -> (Number -> PlayerMoodOpts) -> Number -> List (AudioUnit D2)
-playerMood pitch name' opts' time =
+playerMood :: String -> Int -> (Number -> PlayerMoodOpts) -> MusicalEvent
+playerMood pitch name' opts' time info =
   if time + kr >= 0.0 && time < (len + 3.0) then
     pure
       $ pannerMono_ (opts.tag <> "_panMood") (opts.pan time)
@@ -1395,10 +1422,7 @@ playerMood pitch name' opts' time =
   name = "Mood-" <> pitch <> "-" <> show name' <> "-l"
 
 data MoodInfo
-  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) MoodPan
-
-data MoodPan
-  = MoodPan Number Number Number
+  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) Number
 
 type FiltSig
   = forall ch. Pos ch => String -> AudioParameter Number -> AudioParameter Number -> AudioUnit ch -> AudioUnit ch
@@ -1408,22 +1432,26 @@ bypassFilt _ _ _ i = i
 
 lowOs = 1.3 :: Number
 
-moodPlayer2 :: Number -> String -> Array (Number -> List (AudioUnit D2))
+moodPlayer2 :: Number -> String -> ArrayOfEvents
 moodPlayer2 os tg =
   map
-    ( \(MoodInfo pitch tgn x y f filt q gf (MoodPan _a _b _c)) ->
-        ( atT (y + os)
-            $ playerMood pitch x
-                ( \l ->
-                    { tag: tgn <> tg <> "mp1" <> pitch <> (show x) <> tgn <> tg
-                    , pan: (\t -> _a * sin (_b * (t + _c) * pi))
-                    , filt
-                    , offset: 0.0
-                    , gain: gf l
-                    , bpff: epwf [ Tuple 0.0 f, Tuple 0.0 f ]
-                    , bpfq: epwf [ Tuple 0.0 q, Tuple l q ]
-                    }
-                )
+    ( \(MoodInfo pitch tgn x y f filt q gf _pan) ->
+        ( \time info@{ xr } ->
+            atT (y + os)
+              ( playerMood pitch x
+                  ( \l ->
+                      { tag: tgn <> tg <> "mp1" <> pitch <> (show x) <> tgn <> tg
+                      , pan: (const (_pan - (xr * 2.0 * _pan)))
+                      , filt
+                      , offset: 0.0
+                      , gain: gf l
+                      , bpff: epwf [ Tuple 0.0 f, Tuple 0.0 f ]
+                      , bpfq: epwf [ Tuple 0.0 q, Tuple l q ]
+                      }
+                  )
+              )
+              time
+              info
         )
     )
     ( ( map
@@ -1437,7 +1465,7 @@ moodPlayer2 os tg =
                   4.0
                   -- shifted back to make more sense
                   (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.4 (0.9 - x), Tuple (l - 0.3) (0.9 - x), Tuple (l - 0.15) 0.0 ])
-                  (MoodPan 0.0 0.2 0.2)
+                  0.0
           )
           (range 0 5)
       )
@@ -1446,67 +1474,67 @@ moodPlayer2 os tg =
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-              (MoodPan 0.3 0.2 0.2)
+              (-0.2)
           , MoodInfo "F#4" "-" 0 1.45
               400.0 -- (conv440 (-15))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-              (MoodPan 0.4 0.1 0.35)
+              0.2
           , MoodInfo "G4" "-" 4 1.15
               450.0 --(conv440 (22))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.1 0.5 (-0.7))
+              (-0.7)
           , MoodInfo "A4" "-" 5 1.3
               500.0 --(conv440 (-12))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.05 1.0 0.05)
+              (0.7)
           , MoodInfo "B4" "-" 2 1.0
               550.0 --(conv440 (14))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.15 0.4 0.0)
+              (-1.0)
           , MoodInfo "C5" "-" 2 1.6
               600.0 --(conv440 (3))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.6 0.6 (-0.8))
+              (1.0)
           , MoodInfo "D5" "-" 2 0.4
               650.0 -- (conv440 (-7))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.5 0.75 0.8)
+              (-0.1)
           , MoodInfo "E5" "-" 0 0.3
               700.0 --(conv440 (7))
               bypassFilt
               3.0
               (\l -> epwf [ Tuple 0.0 0.2, Tuple (l - 1.0) 0.2, Tuple l 0.0 ])
-              (MoodPan 0.9 0.15 (-0.2))
+              (0.1)
           , MoodInfo "F#5" "-" 0 0.3
               800.0 --(conv440 (9))
               bypassFilt
               2.0
               (\l -> epwf [ Tuple 0.0 0.2, Tuple (l - 1.0) 0.2, Tuple l 0.0 ])
-              (MoodPan 0.3 0.5 0.9)
+              0.0
           , MoodInfo "G5" "-" 3 0.5
               900.0 --(conv440 (10))
               bypassFilt
               2.0
               (\l -> epwf [ Tuple 0.0 0.3, Tuple l 0.3 ])
-              (MoodPan 0.4 0.1 (-0.2))
+              (-0.4)
           , MoodInfo "A5" "-" 2 0.0
               1000.0 --(conv440 0)
               bypassFilt
               0.01
               (\l -> epwf [ Tuple 0.0 1.0, Tuple 7.0 1.0, Tuple l 0.0 ])
-              (MoodPan 0.3 0.1 0.5)
+              (0.4)
           ]
     )
 
@@ -1518,8 +1546,8 @@ reverbVoice tag au = convolver_ tag "Impulses-matrix-reverb3" au
 endGainFunction :: Number -> Number -> AudioParameter Number
 endGainFunction gl time = ((epwf [ Tuple 0.0 gl, Tuple 30.0 gl, Tuple 38.0 (gl / 2.0), Tuple 53.0 0.0 ]) time)
 
-playerWindChimes :: Number -> List (AudioUnit D2)
-playerWindChimes time =
+playerWindChimes :: MusicalEvent
+playerWindChimes time info@{ yr, xr } =
   boundPlayer (40.0) time
     ( defer \_ ->
         pure
@@ -1534,12 +1562,12 @@ playerWindChimes time =
                     )
                       time
                   )
-                  (playBufWithOffset_ ("Random-wind_chimespl") ("Random-wind_chimes") (1.0 + 0.1 + (sin $ 0.1 * pi * time)) 0.0)
+                  (playBufWithOffset_ ("Random-wind_chimespl") ("Random-wind_chimes") (1.0 + 0.1 + (sin $ (0.15 * yr) * pi * time)) 0.0)
               )
     )
 
-playerMel1 :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerMel1 tag ratef vol time =
+playerMel1 :: String -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
+playerMel1 tag ratef vol time info =
   boundPlayer (18.0) time
     ( defer \_ ->
         pure
@@ -1553,13 +1581,13 @@ playerMel1 tag ratef vol time =
                     )
                       time
                   )
-                  ( playBuf_ ("mel-1-impl-0" <> tag) ("mel-1") (ratef time)
+                  ( playBuf_ ("mel-1-impl-0" <> tag) ("mel-1") (ratef time info)
                   )
               )
     )
 
-playerOldie :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerOldie tag ratef vol time =
+playerOldie :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerOldie tag ratef vol time info =
   boundPlayer (15.13) time
     ( defer \_ ->
         pure
@@ -1578,8 +1606,8 @@ playerOldie tag ratef vol time =
             )
     )
 
-playerCro :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerCro tag ratef vol time =
+playerCro :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerCro tag ratef vol time info =
   boundPlayer (18.0) time
     ( defer \_ ->
         pure
@@ -1599,8 +1627,8 @@ playerCro tag ratef vol time =
               )
     )
 
-playerMel2 :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerMel2 tag ratef vol time =
+playerMel2 :: String -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
+playerMel2 tag ratef vol time info =
   boundPlayer (18.0) time
     ( defer \_ ->
         pure
@@ -1614,13 +1642,13 @@ playerMel2 tag ratef vol time =
                     )
                       time
                   )
-                  ( playBuf_ ("mel-2-impl-0" <> tag) ("mel-2") (ratef time)
+                  ( playBuf_ ("mel-2-impl-0" <> tag) ("mel-2") (ratef time info)
                   )
               )
     )
 
-playerMetalC1 :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerMetalC1 tag ratef vol time =
+playerMetalC1 :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerMetalC1 tag ratef vol time info =
   boundPlayer (20.0) time
     ( defer \_ ->
         pure
@@ -1639,8 +1667,8 @@ playerMetalC1 tag ratef vol time =
               )
     )
 
-playerSmol :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerSmol tag ratef vol time =
+playerSmol :: String -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
+playerSmol tag ratef vol time info =
   boundPlayer (20.0) time
     ( defer \_ ->
         pure
@@ -1654,13 +1682,13 @@ playerSmol tag ratef vol time =
                     )
                       time
                   )
-                  ( playBuf_ ("xmchim-0" <> tag) ("tiny-chimes-1") (ratef time)
+                  ( playBuf_ ("xmchim-0" <> tag) ("tiny-chimes-1") (ratef time info)
                   )
               )
     )
 
-playerBowl :: String -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerBowl tag ratef vol time =
+playerBowl :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerBowl tag ratef vol time info =
   boundPlayer (20.0) time
     ( defer \_ ->
         pure
@@ -1679,8 +1707,8 @@ playerBowl tag ratef vol time =
               )
     )
 
-playerWindChimes2 :: Number -> List (AudioUnit D2)
-playerWindChimes2 time =
+playerWindChimes2 :: MusicalEvent
+playerWindChimes2 time info@{ yr } =
   boundPlayer (10.0) time
     ( defer \_ ->
         pure
@@ -1696,9 +1724,9 @@ playerWindChimes2 time =
                   )
                   ( playBufT_ ("Random-wind_chimesplx") ("Random-wind_chimes")
                       ( ( epwf
-                            [ Tuple 0.0 1.8
-                            , Tuple 8.0 3.0
-                            , Tuple 10.0 3.0
+                            [ Tuple 0.0 (1.8 + yr)
+                            , Tuple 8.0 (3.0 + yr)
+                            , Tuple 10.0 (3.0 + yr)
                             ]
                         )
                           time
@@ -1707,8 +1735,8 @@ playerWindChimes2 time =
               )
     )
 
-playerGlassRub :: Number -> List (AudioUnit D2)
-playerGlassRub time =
+playerGlassRub :: MusicalEvent
+playerGlassRub time info@{ xr } =
   boundPlayer (19.8) time
     ( defer \_ ->
         pure
@@ -1726,12 +1754,12 @@ playerGlassRub time =
                     )
                       time
                   )
-                  (playBufWithOffset_ ("glassRubPlay") ("Random-glass-bell-rubbing1") 1.0 0.0)
+                  (playBufWithOffset_ ("glassRubPlay") ("Random-glass-bell-rubbing1") (0.95 + (0.1 * xr)) 0.0)
               )
     )
 
-playerBellHit :: Number -> List (AudioUnit D2)
-playerBellHit time =
+playerBellHit :: MusicalEvent
+playerBellHit time info =
   boundPlayer (5.0) time
     ( defer \_ ->
         pure
@@ -1748,8 +1776,8 @@ playerBellHit time =
               )
     )
 
-playerGuitar :: String -> String -> Number -> Number -> List (AudioUnit D2)
-playerGuitar tag name tos time =
+playerGuitar :: String -> String -> Number -> MusicalEvent
+playerGuitar tag name tos time info =
   let
     len = fromMaybe 0.0 (M.lookup name soundsFullMap)
   in
@@ -1763,8 +1791,8 @@ playerGuitar tag name tos time =
                 )
       )
 
-playerGuitarEnd :: Number -> List (AudioUnit D2)
-playerGuitarEnd time =
+playerGuitarEnd :: Number -> MusicalEvent
+playerGuitarEnd tos time info =
   let
     len = fromMaybe 0.0 (M.lookup "endGuitar2" soundsEndMap)
   in
@@ -1774,12 +1802,12 @@ playerGuitarEnd time =
             $ panner_ ("guitarEnd" <> "_panGuitarEnd") 0.0
                 ( gainT_' ("guitarEnd" <> "_panGuitarEnd")
                     (endGainFunction guitarGain time)
-                    (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
+                    (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 tos)
                 )
       )
 
-playerOrganOutro :: Number -> List (AudioUnit D2)
-playerOrganOutro time =
+playerOrganOutro :: Number -> MusicalEvent
+playerOrganOutro tos time info =
   let
     len = fromMaybe 0.0 (M.lookup "outroOrgan2" soundsEndMap)
   in
@@ -1789,12 +1817,12 @@ playerOrganOutro time =
             $ panner_ ("outroOrgan2" <> "-outroOrgan2") 0.0
                 ( gainT_' ("outroOrgan2" <> "-outroOrgan2")
                     (endGainFunction 0.94 time)
-                    (playBufWithOffset_ ("outroOrgan2" <> "_playerGuitar") ("End-outroOrgan2") 1.0 0.0)
+                    (playBufWithOffset_ ("outroOrgan2" <> "_playerGuitar") ("End-outroOrgan2") 1.0 tos)
                 )
       )
 
-playerGuitar2 :: String -> Number -> List (AudioUnit D2)
-playerGuitar2 tag time =
+playerGuitar2 :: String -> MusicalEvent
+playerGuitar2 tag time info =
   boundPlayer (15.0 + 1.0) time
     ( defer \_ ->
         pure
@@ -1805,8 +1833,8 @@ playerGuitar2 tag time =
               )
     )
 
-playerRodeFill :: String -> Number -> List (AudioUnit D2)
-playerRodeFill tag time =
+playerRodeFill :: String -> MusicalEvent
+playerRodeFill tag time info =
   boundPlayer (14.0 + 1.0) time
     ( defer \_ ->
         pure
@@ -1817,8 +1845,8 @@ playerRodeFill tag time =
               )
     )
 
-playerHarm :: String -> String -> Number -> Number -> Number -> List (AudioUnit D2)
-playerHarm tag name hp g time =
+playerHarm :: String -> String -> Number -> Number -> MusicalEvent
+playerHarm tag name hp g time info =
   let
     len = fromMaybe 0.0 (M.lookup name soundsHarmMap)
   in
@@ -1851,8 +1879,8 @@ reverbBlend = 0.27 :: Number
 
 dryBlend = 0.73 :: Number
 
-playerVoice :: String -> String -> Number -> Number -> List (AudioUnit D2)
-playerVoice tag' name tos time =
+playerVoice :: String -> String -> Number -> MusicalEvent
+playerVoice tag' name tos time info =
   boundPlayer (len + 1.0) time
     ( defer \_ ->
         pure
@@ -1887,8 +1915,8 @@ playerVoice tag' name tos time =
         )
     )
 
-playerLowEnd :: String -> String -> Number -> Number -> List (AudioUnit D2)
-playerLowEnd tag lc gn time =
+playerLowEnd :: String -> String -> Number -> MusicalEvent
+playerLowEnd tag lc gn time info =
   let
     len = fromMaybe 0.0 (M.lookup lc soundsEndMap)
   in
@@ -1902,18 +1930,18 @@ playerLowEnd tag lc gn time =
                 )
       )
 
-playerVoiceEnd :: Number -> List (AudioUnit D2)
-playerVoiceEnd time =
+playerVoiceEnd :: Number -> MusicalEvent
+playerVoiceEnd tos time info =
   boundPlayer (len + 1.0) time
     ( defer \_ ->
         pure
-          $ panner_ ("endVoice2" <> "_panVoiceEndd") 0.0
-              ( ( ( gain_' ("verb'd_voiced") reverbBlend
-                      ( reverbVoice ("rvbVoiced")
-                          (vx ("withReverb"))
+          $ panner_ ("rendVoice2" <> "_panVoiceEndd") 0.0
+              ( ( ( gain_' ("rverb'd_voiced") reverbBlend
+                      ( reverbVoice ("rrvbVoiced")
+                          (vx ("rwithReverb"))
                       )
                   )
-                    + (gain_' ("verb'd_voice") dryBlend (vx ("withoutReverb")))
+                    + (gain_' ("verb'd_voice") dryBlend (vx ("rwithoutReverb")))
                 )
               )
     )
@@ -1925,13 +1953,13 @@ playerVoiceEnd time =
         (endGainFunction (vocalGain - 0.07) time)
         ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd")
             ( mainHighpass ("endVoice2" <> tag <> "_highpassVoiceEnd")
-                (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
+                (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd") ("End-endVoice2") 1.0 tos)
             )
         )
     )
 
-playerVoiceIASM :: String -> Number -> Number -> Number -> List (AudioUnit D2)
-playerVoiceIASM tag' hpf vol time =
+playerVoiceIASM :: String -> Number -> Number -> MusicalEvent
+playerVoiceIASM tag' hpf vol time info =
   boundPlayer (len + 1.0) time
     ( defer \_ ->
         pure
@@ -1950,36 +1978,36 @@ playerVoiceIASM tag' hpf vol time =
   len = fromMaybe 0.0 (M.lookup "endVoice2" soundsEndMap)
 
   vx tag =
-    ( gainT_' ("endVoice2" <> tag <> "_gainVoiceEnd2")
+    ( gainT_' ("rendVoice2" <> tag <> "_gainVoiceEnd2")
         ((epwf [ Tuple 0.0 vol, Tuple len vol ]) time)
-        ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd2")
-            ( highpass_ ("endVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
-                (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
+        ( vocalCompressor ("rendVoice2" <> tag <> "_compressorVoiceEnd2")
+            ( highpass_ ("rendVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
+                (playBufWithOffset_ ("rendVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
             )
         )
     )
 
-playerVoiceIASMGlitch :: String -> Number -> Number -> Number -> List (AudioUnit D2)
-playerVoiceIASMGlitch tag hpf vol time =
+playerVoiceIASMGlitch :: String -> Number -> Number -> MusicalEvent
+playerVoiceIASMGlitch tag hpf vol time info =
   let
     len = fromMaybe 0.0 (M.lookup "inASentimentalMood" soundsEndMap)
   in
     boundPlayer (len + 1.0) time
       ( defer \_ ->
           pure
-            $ panner_ ("endVoice2" <> tag <> "_panVoiceEnd2") 0.0
-                ( gainT_' ("endVoice2" <> tag <> "_gainVoiceEnd2")
+            $ panner_ ("xendVoice2" <> tag <> "_panVoiceEnd2") 0.0
+                ( gainT_' ("xendVoice2" <> tag <> "_gainVoiceEnd2")
                     ((epwf [ Tuple 0.0 vol, Tuple len vol ]) time)
-                    ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd2")
-                        ( highpass_ ("endVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
-                            (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
+                    ( vocalCompressor ("xendVoice2" <> tag <> "_compressorVoiceEnd2")
+                        ( highpass_ ("xendVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
+                            (playBufWithOffset_ ("xendVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
                         )
                     )
                 )
       )
 
-playerLights :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-playerLights tag' name prate hpf vol time =
+playerLights :: String -> String -> Number -> Number -> Number -> MusicalEvent
+playerLights tag' name prate hpf vol time info@{ yr } =
   let
     tag = tag' <> name
   in
@@ -1990,15 +2018,15 @@ playerLights tag' name prate hpf vol time =
                 ( gainT_' (tag <> "_gainLights")
                     ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
                     ( vocalCompressor (tag <> "_compressorLights")
-                        ( highpass_ (tag <> "_highpassLights") hpf 1.0
+                        ( highpass_ (tag <> "_highpassLights") (hpf + (1000.0 * yr)) 1.0
                             (playBufWithOffset_ (tag <> "_playerLights") (name) prate 0.0)
                         )
                     )
                 )
       )
 
-playerRose :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-playerRose tag' name pan hpf vol time =
+playerRose :: String -> String -> Number -> Number -> Number -> MusicalEvent
+playerRose tag' name pan hpf vol time info =
   let
     tag = tag' <> name
   in
@@ -2016,8 +2044,8 @@ playerRose tag' name pan hpf vol time =
                 )
       )
 
-playerMHL :: (String -> Number) -> String -> String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-playerMHL dct pfx tag' name pan hpf vol time =
+playerMHL :: (String -> Number) -> String -> String -> String -> Number -> Number -> Number -> MusicalEvent
+playerMHL dct pfx tag' name pan hpf vol time info =
   let
     tag = tag' <> name
   in
@@ -2037,14 +2065,14 @@ playerMHL dct pfx tag' name pan hpf vol time =
   where
   len = (dct name)
 
-playerRoseLong :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerRoseLong :: String -> String -> Number -> Number -> Number -> MusicalEvent
 playerRoseLong = playerMHL fromSoundsBridge "Bridge-"
 
-playerALight :: String -> String -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
+playerALight :: String -> String -> Number -> Number -> Number -> MusicalEvent
 playerALight = playerMHL fromSoundsBridge2 "Bridge2-"
 
-playerSAS :: String -> String -> Number -> Number -> Number -> Number -> Number -> List (AudioUnit D2)
-playerSAS tag' name len pan hpf vol time =
+playerSAS :: String -> String -> Number -> Number -> Number -> Number -> MusicalEvent
+playerSAS tag' name len pan hpf vol time info =
   let
     tag = tag' <> name
   in
@@ -2062,8 +2090,8 @@ playerSAS tag' name len pan hpf vol time =
                 )
       )
 
-playerDrips :: String -> String -> Number -> Number -> Number -> List (AudioUnit D2)
-playerDrips tag' name len hpf time =
+playerDrips :: String -> String -> Number -> Number -> MusicalEvent
+playerDrips tag' name len hpf time info =
   let
     tag = tag' <> name
   in
@@ -2081,8 +2109,8 @@ playerDrips tag' name len hpf time =
                 )
       )
 
-playerKiss :: String -> Number -> Number -> Number -> List (AudioUnit D2)
-playerKiss tag gd hpf time =
+playerKiss :: String -> Number -> Number -> MusicalEvent
+playerKiss tag gd hpf time info =
   boundPlayer (5.0) time
     ( defer \_ ->
         pure
@@ -2097,17 +2125,17 @@ playerKiss tag gd hpf time =
               )
     )
 
-playerIctus :: String -> String -> Number -> Number -> (Number -> Number) -> Number -> Number -> List (AudioUnit D2)
-playerIctus tag name len vos rosf tos time =
+playerIctus :: String -> String -> Number -> Number -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
+playerIctus tag name len vos rosf tos time info@{ xr } =
   boundPlayer (len + 2.0) time
     ( defer \_ ->
         pure
           $ panner_ (tag <> "_panIctus") 0.0
               ( gainT_' (tag <> "_gainIctus")
                   ((epwf [ Tuple 0.0 0.0, Tuple (len / 2.0) vos, Tuple len 0.0 ]) time)
-                  ( highpassT_ (tag <> "_highpassIctus") ((epwf [ Tuple 0.0 200.0, Tuple len 3500.0 ]) time)
+                  ( highpassT_ (tag <> "_highpassIctus") ((epwf [ Tuple 0.0 200.0, Tuple len (400.0 + (5000.0 * xr)) ]) time)
                       ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
-                      (playBufWithOffset_ (tag <> "_playerIctus") (name) (rosf time) tos)
+                      (playBufWithOffset_ (tag <> "_playerIctus") (name) (rosf time info) tos)
                   )
               )
     )
@@ -2369,202 +2397,456 @@ cascadesWithInfoInTime =
   ) ::
     { acc :: Array CSN, dur :: Number }
 
-startAt = 24.0 :: Number
+middleStartT = 24.0 :: Number
 
-eos = 0.9 :: Number
+eos = (-1.6) :: Number
 
-lightsStart = 27.5 :: Number
+lightsStart = 27.0 :: Number
 
 roseMult = 1.2 :: Number
 
-sceneA :: Number -> Behavior (AudioUnit D2)
-sceneA time = pure $ speaker' (playBuf ("Windchime-" <> "Glass---Jangle-1" <> "-l") 1.0)
+-- 24
+canMove :: Number -> Boolean
+canMove n = n >= 3.5 && n <= 27.0 || n >= 67.0 && n <= 79.0 || n >= 124.0 && n <= 140.0
+
+canClick :: Number -> Boolean
+canClick n = n >= 147.0
 
 -- for Arline Solomon
-scene :: Number -> Behavior (AudioUnit D2)
-scene time =
-  pure
-    $ speaker
-        ( ( gain_ "globalGain" 2.0
-              ( zero
-                  :| fold
-                      ( map ((#) time)
-                          ( [ atT 3.0 $ playerDrone "Indr" "In-G4-78-l" 1.0
-                            , atT 7.0 $ oscSimpl "InOsc" 20.0 (conv440 (-14))
-                            , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
-                            , atT 9.0 $ oscSimpl "AOsc" 18.0 (conv440 (-12))
-                            , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
-                            , atT 14.7 $ oscReallyLow "gOsc" 10.4 (conv440 (-26))
-                            , atT 8.5 $ playerGlassRub
-                            , atT 0.5 $ playerWindChimes
-                            , atT 15.1 $ playerWindChimes2
-                            , atT 24.3 $ oscSimpl "FoundationOsc" 5.0 (conv440 (-17))
-                            , atT 11.0 $ oscSimpl "SenOsc" 15.0 (conv440 (-10))
-                            , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
-                            , atT 15.5 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
-                            , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
-                            , atT 18.5 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
-                            , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
-                            , atT 19.15 $ playerDrone "Indr1" "In-G4-78-l" 1.0
-                            , atT 16.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
-                            , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
-                            ]
-                              <> (fadeIn 0.0 "In")
-                              <> (aDots 4.0 "A")
-                              <> (senArr 7.0)
-                              <> (tiDots 11.9 "Ti1")
-                              <> (tiDots 20.0 "Ti2")
-                              <> (menPlayer1 16.0 "Men1")
-                              <> (menPlayer2 16.0 "Men2")
-                              <> (talPlayer2 20.0 "Tal2")
-                              <> (moodPlayer2 24.5 "Mood2")
+scene ::
+  Number ->
+  Number ->
+  Mouse ->
+  IASMAccumulator ->
+  CanvasInfo ->
+  Number ->
+  Behavior (AV D2 IASMAccumulator)
+scene w h mouse acc (CanvasInfo ci) = lcmap (_ + playhead) (\t -> f <$> pos' <*> isClicked' <*> pure t)
+  where
+  pos' :: Behavior (Maybe { x :: Number, y :: Number })
+  pos' =
+    (map <<< map)
+      ( \{ x, y } ->
+          { x: toNumber x, y: toNumber y }
+      )
+      (position mouse)
+
+  isClicked' :: Behavior Boolean
+  isClicked' = map (not <<< isEmpty) $ buttons mouse
+
+  f pos isClicked time =
+    ( AV
+        ( Just
+            $ speaker
+                ( ( gain_ "introMaster" 2.0
+                      ( zero
+                          :| fold
+                              ( map
+                                  ( \func ->
+                                      func
+                                        time
+                                        { isClicked
+                                        , justClicked
+                                        , pos
+                                        , w
+                                        , h
+                                        , yr
+                                        , xr
+                                        }
+                                  )
+                                  intro
+                              )
+                      )
+                  )
+                    :| ( gain_ "afterMaster" 1.0
+                          ( zero
+                              :| fold
+                                  ( map
+                                      ( \func ->
+                                          func
+                                            time
+                                            { isClicked
+                                            , justClicked
+                                            , pos
+                                            , w
+                                            , h
+                                            , yr
+                                            , xr
+                                            }
+                                      )
+                                      ( ( mains
+                                            <> ( map (atT (middleStartT))
+                                                  ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 6))
+                                                      <> tongueDrips
+                                                      <> lights
+                                                      <> harmonicFlourish
+                                                      <> firstBouquet
+                                                      <> thingsAreNotWhatTheySeem
+                                                      <> laggyRoseChoir
+                                                      <> secondBouquet
+                                                      <> duke1935
+                                                      <> trippyMetal
+                                                      <> bowlStrike
+                                                      <> raysOfLight
+                                                      <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
+                                                      <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
+                                                      <> [ atT 97.6 $ oscSimpl "dominant" 5.7 (conv440 (-19))
+                                                        ]
+                                                      <> lastInASentimentalMood
+                                                      <> lastInASentimentalMoodEcho
+                                                      <> [ atT 101.4 $ playerCro "ctz" (const 1.0) 0.25
+                                                        ]
+                                                      <> [ atT 98.4 $ playerVoiceIASMGlitch "ga" 1000.0 0.4, atT 98.6 $ playerVoiceIASMGlitch "ga" 1500.0 0.3, atT 98.8 $ playerVoiceIASMGlitch "ga" 2000.0 0.2 ]
+                                                      <> lastInASentimentalMoodDrones
+                                                      <> finalMoodCascade
+                                                      <> foundationUnderLastMood
+                                                      <> stuffAtEnd
+                                                      <> chimericOutro
+                                                  )
+                                              )
+                                        )
+                                      )
+                                  )
                           )
                       )
-              )
-          )
-            :| ( gain_ "globalGain" 1.0
-                  ( zero
-                      :| fold
-                          ( map ((#) time)
-                              ( ( [ atT startAt $ playerVoice "Voice" "voice" 0.0 ]
-                                    <> [ atT startAt $ playerGuitar "Guitar" "guitar" 0.0 ]
-                                    <> ( map (atT (startAt))
-                                          ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 6))
-                                              <> [ atT 36.6 $ playerMel1 "a" (const 1.0) 0.1 ]
-                                              <> [ atT 43.0 $ playerMel1 "b" (\t -> 2.0 + (0.1 * sin (0.1 * t * pi))) 0.08 ]
-                                              <> [ atT 45.6 $ playerMel1 "c" (\t -> 4.0 + (0.1 * sin (0.1 * t * pi))) 0.02 ]
-                                              <> [ atT 50.0 $ playerMel2 "d" (const 1.0) 0.1 ]
-                                              <> [ atT 50.0 $ playerMel2 "e" (\t -> 4.0 + (0.1 * sin (0.1 * t * pi))) 0.1 ]
-                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.0 + (nf * 0.45)) $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 5.0) * 0.05))) (range 0 7))
-                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.05 + (nf * 0.5)) $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 3.0) * 0.05))) (range 0 4))
-                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.15 + (nf * 0.6)) $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))) (range 0 3))
-                                              <> (map (\i -> let nf = toNumber i in atT (lightsStart + 0.2 + (nf * 0.9)) $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))) (range 0 1))
-                                              <> [ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 0.35
-                                                , atT 36.0 $ playerHarm "f-sharp0" "f-sharp" 1500.0 0.22
-                                                ]
-                                              <> [ atT 62.8 $ playerRose ("rose0") "Bridge-rose3-l" 0.7 (2000.0) (1.0 * roseMult)
-                                                , atT 63.0 $ playerRose ("rose1") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
-                                                , atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) (0.8 * roseMult)
-                                                , atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
-                                                , atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
-                                                , atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                , atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) (0.7 * roseMult)
-                                                , atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
-                                                , atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
-                                                , atT 66.5 $ playerRose ("rose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                , atT 66.9 $ playerRose ("rose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                , atT 67.3 $ playerRose ("rose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
-                                                , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                , atT 67.9 $ playerRose ("rose13") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                -------------------------
-                                                -- , atT 68.95 $ playerRose ("seem1") "Bridge-rose2-l" 0.7 (1000.0) (0.6)
-                                                , atT 70.8 $ playerRose ("rose-0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
-                                                , atT 71.5 $ playerRose ("rose-2") "Bridge-rose3-l" (0.2) (1400.0) 0.7
-                                                , atT 72.2 $ playerRose ("rose-3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
-                                                , atT 72.5 $ playerRose ("rose-4") "Bridge-rose3-l" (0.7) (1200.0) 0.4
-                                                -----------------------------
-                                                , atT 75.9 $ playerRose ("rose-5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6
-                                                , atT 76.5 $ playerRose ("rose-6") "Bridge-rose3-l" (0.2) (1400.0) 0.7
-                                                , atT 76.9 $ playerRose ("rose-7") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
-                                                , atT 77.2 $ playerRose ("rose-8") "Bridge-rose3-l" (0.7) (1200.0) 0.65
-                                                ]
-                                              -------------- seem
-                                              
-                                              <> [ atT 69.5 $ playerRose ("seem1") "Bridge-seem1-l" 0.0 (1000.0) 0.5
-                                                , atT 71.2 $ playerRose ("seem2") "Bridge-seem-l" (-0.7) (1700.0) (0.4)
-                                                , atT 72.0 $ playerRose ("seem3") "Bridge-seem2-l" (0.8) (1500.0) 0.6
-                                                , atT 73.5 $ playerRose ("seem4") "Bridge-seem4-l" (-0.8) (900.0) (0.7)
-                                                , atT 74.1 $ playerRose ("seem5") "Bridge-seem1-l" 0.6 (1000.0) 0.6
-                                                , atT 75.0 $ playerRose ("seem6") "Bridge-seem-l" (-0.4) (1500.0) (0.4)
-                                                -------------- seemToFall
-                                                ----- entre deux
-                                                , atT 76.38 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" 0.5 (600.0) (0.4)
-                                                , atT 76.5 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine2") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" (-0.5) (800.0) (0.25)
-                                                , atT 76.62 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine3") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" 0.5 (600.0) (0.4)
-                                                , atT 76.78 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine4") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" (-0.5) (800.0) (0.25)
-                                                ]
-                                              <> ( map (atT 26.0)
-                                                    [ atT 62.8 $ playerRose ("xrose0") "Bridge-rose3-l" 0.7 (2000.0) (1.0 * roseMult)
-                                                    , atT 63.0 $ playerRose ("xrose1") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
-                                                    , atT 63.5 $ playerRose ("xrose2") "Bridge-rose3-l" (0.2) (1400.0) (0.8 * roseMult)
-                                                    , atT 64.2 $ playerRose ("xrose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
-                                                    , atT 64.5 $ playerRose ("xrose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
-                                                    , atT 64.9 $ playerRose ("xrose5") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                    , atT 65.5 $ playerRose ("xrose6") "Bridge-rose3-l" (0.2) (1400.0) (0.7 * roseMult)
-                                                    , atT 65.9 $ playerRose ("xrose7") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
-                                                    , atT 66.2 $ playerRose ("xrose8") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
-                                                    , atT 66.5 $ playerRose ("xrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                    , atT 66.9 $ playerRose ("xrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                    , atT 67.3 $ playerRose ("xrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
-                                                    , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
-                                                    , atT 67.9 $ playerRose ("xrose13") "Bridge-rose4-l" (0.2) (1900.0) (0.5 * roseMult)
-                                                    , atT 68.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (3000.0) (0.5 * roseMult)
-                                                    , atT 68.2 $ playerRose ("zxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
-                                                    , atT 68.4 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1700.0) (0.4 * roseMult)
-                                                    , atT 68.6 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.3 * roseMult)
-                                                    , atT 68.9 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.12 * roseMult)
-                                                    , atT 69.1 $ playerRose ("bzxrose42") "Bridge-rose2-l" (-0.7) (2400.0) (0.1 * roseMult)
-                                                    , atT 69.17 $ playerRose ("zbxrose531") "Bridge-rose4-l" (1.0) (900.0) (0.2 * roseMult)
-                                                    , atT 69.23 $ playerRose ("bzxrose11") "Bridge-rose3-l" (0.7) (1800.0) (0.07 * roseMult)
-                                                    , atT 70.33 $ playerRose ("bzrose-12") "Bridge-rose2-l" (-0.7) (1000.0) (0.04 * roseMult)
-                                                    , atT 70.42 $ playerRose ("bzxrose-13") "Bridge-rose4-l" (0.5) (2900.0) (0.02 * roseMult)
-                                                    -----------------------------
-                                                    ]
-                                                )
-                                              <> [ atT 85.2 $ playerOldie "1935" (\t -> 1.0 + (0.02 * (sin (pi * t * 0.2)))) 0.1
-                                                ]
-                                              <> [ atT 87.0 $ playerMetalC1 "mcla" (\t -> 1.0 + (0.1 * sin (0.1 * t * pi))) 0.08 ]
-                                              <> [ atT 84.0 $ playerBowl "up" (\t -> (0.8 + (-0.01 * (sin $ pi * t)))) 0.2
-                                                , atT 84.0 $ playerBowl "down" (\t -> (0.8 + (-0.01 * (cos $ pi * t)))) 0.12
-                                                ]
-                                              <> [ atT 85.5 $ playerALight ("aLight0") "aLight" (-0.5) (1500.0) (0.6)
-                                                , atT 85.9 $ playerALight ("aLight1") "aLight" (0.5) (2000.0) (0.55)
-                                                , atT 86.0 $ playerALight ("mhl1") "mhl-glitch-0" (-0.5) (1500.0) (0.4)
-                                                , atT 86.3 $ playerALight ("mhl2") "mhl-glitch-0" (0.5) (2000.0) (0.3)
-                                                , atT 87.5 $ playerALight ("aLight0") "aLight" (-0.5) (1500.0) (0.6)
-                                                , atT 87.9 $ playerALight ("aLight1") "aLight" (0.5) (2000.0) (0.55)
-                                                ]
-                                              <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
-                                              <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
-                                              <> [ atT 97.6 $ oscSimpl "dominant" 5.7 (conv440 (-19))
-                                                ]
-                                              <> [ atT 98.2 $ playerVoiceIASM "-a" 150.0 vocalGain
-                                                , atT 102.3 $ playerVoiceIASM "-b" 1400.0 0.5
-                                                , atT 102.5 $ playerVoiceIASM "-b" 1400.0 0.4
-                                                , atT 102.7 $ playerVoiceIASM "-c" 1700.0 0.3
-                                                , atT 102.9 $ playerVoiceIASM "-d" 2000.0 0.2
-                                                , atT 101.4 $ playerCro "ctz" (const 1.0) 0.25
-                                                ]
-                                              <> [ atT 98.4 $ playerVoiceIASMGlitch "ga" 1000.0 0.4, atT 98.6 $ playerVoiceIASMGlitch "ga" 1500.0 0.3, atT 98.8 $ playerVoiceIASMGlitch "ga" 2000.0 0.2 ]
-                                              <> [ atT 98.2 $ playerDrone "xIndr" "In-G4-78-l" 1.0
-                                                , atT 98.5 $ playerDrone "xAdr" "A-A4-106-l" 1.0
-                                                , atT 98.7 $ playerDrone "xSendr" "Sen-B4-61-l" 1.0
-                                                , atT 99.0 $ playerDrone "xTidr" "Ti-D5-19-l" 1.0
-                                                , atT 99.3 $ playerDrone "xMendr" "Men-E5-3-l" 1.0
-                                                , atT 99.6 $ playerDrone "xTaldr" "Tal-G5-24-l" 1.0
-                                                ]
-                                              <> ( mapWithIndex
-                                                    (\i (CSN (Cascade a b c _) d e) -> atT (c + 100.0) $ playerIctus (d <> show i) d e (min 0.9 (0.1 + 0.1 * (toNumber i))) (\_ -> 1.0) 0.0)
-                                                    (cascadesWithInfoInTime.acc)
-                                                )
-                                              <> [ atT (101.8) $ playerLowEnd "a" "lowC" 0.4
-                                                , atT (104.1) $ playerLowEnd "b" "lowC" 0.2
-                                                , atT 99.0 $ oscSimpl "cosc" 10.0 (conv440 (-33))
-                                                ]
-                                              <> [ atT (107.0 + eos) $ playerVoiceEnd ]
-                                              <> [ atT (107.0 + eos) $ playerGuitarEnd ]
-                                              <> [ atT (107.0 + eos) $ playerOrganOutro ]
-                                              <> [ atT (123.6 + eos) $ playerSmol "tinychimesa" (\t -> 1.0 + ((-0.05 * t))) 0.08
-                                                , atT (123.9 + eos) $ playerSmol "tinychimesb" (\t -> 1.8 + ((-0.1 * t))) 0.03
-                                                , atT (130.5 + eos) $ playerSmol "tinychimesc" (\t -> 1.0 + ((-0.05 * t))) 0.06
-                                                , atT (130.8 + eos) $ playerSmol "tinychimesd" (\t -> 1.8 + ((-0.1 * t))) 0.02
-                                                ]
-                                          )
-                                      )
-                                )
-                              )
-                          )
-                  )
-              )
-            : Nil
+                    : Nil
+                )
         )
+        ( Just
+            $ ( ( text
+                    (font sansSerif 14 bold)
+                    (5.0)
+                    (20.0)
+                    (fillColor (rgb 0 0 0))
+                    "circle under \"can move mouse\" means move the mouse to change the music."
+                )
+                  <> ( text
+                        (font sansSerif 14 bold)
+                        (5.0)
+                        (40.0)
+                        (fillColor (rgb 0 0 0))
+                        "circle under \"can click mouse\" means click the mouse to change the music."
+                    )
+                  <> ( text
+                        (font sansSerif 14 bold)
+                        (ci.w / 4.0 - 60.0)
+                        (ci.h / 4.0)
+                        (fillColor (rgb 0 0 0))
+                        "can move mouse"
+                    )
+                  <> ( if (canMove time) then
+                        ( filled
+                            ( fillColor
+                                (rgb 255 0 255)
+                            )
+                            (circle (ci.w / 4.0) (ci.h / 4.0 + 40.0) 20.0)
+                        )
+                      else
+                        mempty
+                    )
+                  <> ( text
+                        (font sansSerif 14 bold)
+                        (ci.w * 0.75 - 60.0)
+                        (ci.h * 0.75)
+                        (fillColor (rgb 0 0 0))
+                        "can click mouse"
+                    )
+                  <> ( if (canClick time) then
+                        ( filled
+                            ( fillColor
+                                (rgb 38 179 32)
+                            )
+                            (circle (ci.w * 0.75) (ci.h * 0.75 + 40.0) 20.0)
+                        )
+                      else
+                        mempty
+                    )
+              )
+        )
+        ( acc
+            { isClicked = isClicked
+            }
+        )
+    )
+    where
+    justClicked = not acc.isClicked && isClicked
+
+    yr = maybe 0.0 (\{ y } -> y / h) pos
+
+    xr = maybe 0.0 (\{ x } -> x / w) pos
+
+type MusicalEvent
+  = Number -> IASMInteractiveInfo -> List (AudioUnit D2)
+
+type ArrayOfEvents
+  = Array MusicalEvent
+
+intro :: ArrayOfEvents
+intro =
+  ( [ atT 3.0 $ playerDrone "Indr" "In-G4-78-l" 1.0
+    , atT 7.0 $ oscSimpl "InOsc" 20.0 (conv440 (-14))
+    , atT 3.25 $ playerDrone "Adr" "A-A4-106-l" 1.0
+    , atT 9.0 $ oscSimpl "AOsc" 18.0 (conv440 (-12))
+    , atT 10.0 $ playerDrone "Sendr" "Sen-B4-61-l" 1.0
+    , atT 14.7 $ oscReallyLow "gOsc" 10.4 (conv440 (-26))
+    , atT 8.5 $ playerGlassRub
+    , atT 0.5 $ playerWindChimes
+    , atT 15.1 $ playerWindChimes2
+    , atT 24.3 $ oscSimpl "FoundationOsc" 5.0 (conv440 (-17))
+    , atT 11.0 $ oscSimpl "SenOsc" 15.0 (conv440 (-10))
+    , atT 13.0 $ playerDrone "Tidr" "Ti-D5-19-l" 1.0
+    , atT 15.5 $ oscSimpl "TiOsc" 10.0 (conv440 (-7))
+    , atT 16.0 $ playerDrone "Mendr" "Men-E5-3-l" 1.0
+    , atT 18.5 $ oscSimpl "MenOsc" 7.0 (conv440 (-5))
+    , atT 19.0 $ playerDrone "Taldr" "Tal-G5-24-l" 1.0
+    , atT 19.15 $ playerDrone "Indr1" "In-G4-78-l" 1.0
+    , atT 16.0 $ playerDrone "Adr1" "A-A4-106-l" 1.0
+    , atT 20.0 $ playerDrone "Sendr1" "Sen-B4-61-l" 1.0
+    ]
+      <> (fadeIn 0.0 "In")
+      <> (aDots 4.0 "A")
+      <> (senArr 7.0)
+      <> (tiDots 11.9 "Ti1")
+      <> (tiDots 20.0 "Ti2")
+      <> (menPlayer1 16.0 "Men1")
+      <> (menPlayer2 16.0 "Men2")
+      <> (talPlayer2 20.0 "Tal2")
+      <> (moodPlayer2 24.5 "Mood2")
+  )
+
+mains :: ArrayOfEvents
+mains =
+  let
+    offset = max 0.0 (playhead - middleStartT)
+  in
+    [ atT middleStartT $ playerVoice "Voice" "voice" offset
+    , atT middleStartT $ playerGuitar "Guitar" "guitar2" offset
+    ]
+
+tongueDrips :: ArrayOfEvents
+tongueDrips =
+  [ atT 36.6 $ playerMel1 "a" (\t i -> 1.0) 0.1
+  , atT 43.0 $ playerMel1 "b" (\t i -> 1.95 + (0.1 * i.xr)) 0.08
+  , atT 45.6 $ playerMel1 "c" (\t i -> 3.9 + (0.2 * i.yr)) 0.02
+  , atT 50.0 $ playerMel2 "d" (\t i -> (0.95) + (0.1 * i.xr)) 0.1
+  , atT 50.0 $ playerMel2 "e" (\t i -> (3.9) + (0.2 * i.yr)) 0.1
+  ]
+
+lights :: ArrayOfEvents
+lights =
+  ( map
+      ( \i ->
+          let
+            nf = toNumber i
+          in
+            atT (lightsStart + 0.0 + (nf * 0.45))
+              $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 5.0) * 0.05))
+      )
+      (range 0 10)
+  )
+    <> ( map
+          ( \i ->
+              let
+                nf = toNumber i
+              in
+                atT (lightsStart + 0.05 + (nf * 0.5))
+                  $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 3.0) * 0.05))
+          )
+          (range 0 7)
+      )
+    <> ( map
+          ( \i ->
+              let
+                nf = toNumber i
+              in
+                atT (lightsStart + 0.15 + (nf * 0.6))
+                  $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))
+          )
+          (range 0 6)
+      )
+    <> ( map
+          ( \i ->
+              let
+                nf = toNumber i
+              in
+                atT (lightsStart + 0.2 + (nf * 0.9))
+                  $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))
+          )
+          (range 0 4)
+      )
+
+harmonicFlourish :: ArrayOfEvents
+harmonicFlourish =
+  [ atT 33.1 $ playerHarm "c-sharp0" "c-sharp" 1200.0 0.35
+  , atT 36.0 $ playerHarm "f-sharp0" "f-sharp" 1500.0 0.22
+  ]
+
+firstBouquet :: ArrayOfEvents
+firstBouquet =
+  [ atT 62.8 $ playerRose ("rose0") "Bridge-rose3-l" 0.7 (2000.0) (1.0 * roseMult)
+  , atT 63.0 $ playerRose ("rose1") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
+  , atT 63.5 $ playerRose ("rose2") "Bridge-rose3-l" (0.2) (1400.0) (0.8 * roseMult)
+  , atT 64.2 $ playerRose ("rose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
+  , atT 64.5 $ playerRose ("rose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+  , atT 64.9 $ playerRose ("rose5") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+  , atT 65.5 $ playerRose ("rose6") "Bridge-rose3-l" (0.2) (1400.0) (0.7 * roseMult)
+  , atT 65.9 $ playerRose ("rose7") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
+  , atT 66.2 $ playerRose ("rose8") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+  , atT 66.5 $ playerRose ("rose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+  , atT 66.9 $ playerRose ("rose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+  , atT 67.3 $ playerRose ("rose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+  , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+  , atT 67.9 $ playerRose ("rose13") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+  -------------------------
+  -- , atT 68.95 $ playerRose ("seem1") "Bridge-rose2-l" 0.7 (1000.0) (0.6)
+  , atT 70.8 $ playerRose ("rose-0") "Bridge-rose2-l" 0.7 (2000.0) 0.7
+  , atT 71.5 $ playerRose ("rose-2") "Bridge-rose3-l" (0.2) (1400.0) 0.7
+  , atT 72.2 $ playerRose ("rose-3") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
+  , atT 72.5 $ playerRose ("rose-4") "Bridge-rose3-l" (0.7) (1200.0) 0.4
+  -----------------------------
+  , atT 75.9 $ playerRose ("rose-5") "Bridge-rose2-l" (-0.7) (1600.0) 0.6
+  , atT 76.5 $ playerRose ("rose-6") "Bridge-rose3-l" (0.2) (1400.0) 0.7
+  , atT 76.9 $ playerRose ("rose-7") "Bridge-rose2-l" (-0.2) (1700.0) 0.7
+  , atT 77.2 $ playerRose ("rose-8") "Bridge-rose3-l" (0.7) (1200.0) 0.65
+  ]
+
+thingsAreNotWhatTheySeem :: ArrayOfEvents
+thingsAreNotWhatTheySeem =
+  [ atT 69.5 $ playerRose ("seem1") "Bridge-seem1-l" 0.0 (1000.0) 0.5
+  , atT 71.2 $ playerRose ("seem2") "Bridge-seem-l" (-0.7) (1700.0) (0.4)
+  , atT 72.0 $ playerRose ("seem3") "Bridge-seem2-l" (0.8) (1500.0) 0.6
+  , atT 73.5 $ playerRose ("seem4") "Bridge-seem4-l" (-0.8) (900.0) (0.7)
+  , atT 74.1 $ playerRose ("seem5") "Bridge-seem1-l" 0.6 (1000.0) 0.6
+  , atT 75.0 $ playerRose ("seem6") "Bridge-seem-l" (-0.4) (1500.0) (0.4)
+  ]
+
+laggyRoseChoir :: ArrayOfEvents
+laggyRoseChoir =
+  [ atT 76.38 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" 0.5 (600.0) (0.4)
+  , atT 76.5 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine2") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" (-0.5) (800.0) (0.25)
+  , atT 76.62 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine3") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" 0.5 (600.0) (0.4)
+  , atT 76.78 $ playerRoseLong ("rosePetalsSeemToFallItsAllICouldDreamToCallYouMine4") "rosePetalsSeemToFallItsAllICouldDreamToCallYouMine" (-0.5) (800.0) (0.25)
+  ]
+
+secondBouquet :: ArrayOfEvents
+secondBouquet =
+  ( map (atT 26.0)
+      [ atT 62.8 $ playerRose ("xrose0") "Bridge-rose3-l" 0.7 (2000.0) (1.0 * roseMult)
+      , atT 63.0 $ playerRose ("xrose1") "Bridge-rose2-l" (-0.7) (2000.0) (0.9 * roseMult)
+      , atT 63.5 $ playerRose ("xrose2") "Bridge-rose3-l" (0.2) (1400.0) (0.8 * roseMult)
+      , atT 64.2 $ playerRose ("xrose3") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
+      , atT 64.5 $ playerRose ("xrose4") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+      , atT 64.9 $ playerRose ("xrose5") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+      , atT 65.5 $ playerRose ("xrose6") "Bridge-rose3-l" (0.2) (1400.0) (0.7 * roseMult)
+      , atT 65.9 $ playerRose ("xrose7") "Bridge-rose2-l" (-0.2) (1700.0) (0.7 * roseMult)
+      , atT 66.2 $ playerRose ("xrose8") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+      , atT 66.5 $ playerRose ("xrose42") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+      , atT 66.9 $ playerRose ("xrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+      , atT 67.3 $ playerRose ("xrose11") "Bridge-rose3-l" (0.7) (1200.0) (0.7 * roseMult)
+      , atT 67.7 $ playerRose ("rose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.7 * roseMult)
+      , atT 67.9 $ playerRose ("xrose13") "Bridge-rose4-l" (0.2) (1900.0) (0.5 * roseMult)
+      , atT 68.1 $ playerRose ("zxrose42") "Bridge-rose2-l" (-0.7) (3000.0) (0.5 * roseMult)
+      , atT 68.2 $ playerRose ("zxrose531") "Bridge-rose4-l" (0.2) (900.0) (0.5 * roseMult)
+      , atT 68.4 $ playerRose ("zxrose11") "Bridge-rose3-l" (0.7) (1700.0) (0.4 * roseMult)
+      , atT 68.6 $ playerRose ("zrose12") "Bridge-rose2-l" (-0.7) (1000.0) (0.3 * roseMult)
+      , atT 68.9 $ playerRose ("zxrose13") "Bridge-rose4-l" (0.2) (900.0) (0.12 * roseMult)
+      , atT 69.1 $ playerRose ("bzxrose42") "Bridge-rose2-l" (-0.7) (2400.0) (0.1 * roseMult)
+      , atT 69.17 $ playerRose ("zbxrose531") "Bridge-rose4-l" (1.0) (900.0) (0.2 * roseMult)
+      , atT 69.23 $ playerRose ("bzxrose11") "Bridge-rose3-l" (0.7) (1800.0) (0.07 * roseMult)
+      , atT 70.33 $ playerRose ("bzrose-12") "Bridge-rose2-l" (-0.7) (1000.0) (0.04 * roseMult)
+      , atT 70.42 $ playerRose ("bzxrose-13") "Bridge-rose4-l" (0.5) (2900.0) (0.02 * roseMult)
+      -----------------------------
+      ]
+  )
+
+duke1935 :: ArrayOfEvents
+duke1935 =
+  [ atT 85.2 $ playerOldie "1935" (\t -> 1.0 + (0.02 * (sin (pi * t * 0.2)))) 0.1
+  ]
+
+bowlStrike :: ArrayOfEvents
+bowlStrike =
+  [ atT 83.5 $ playerBowl "up" (\t -> (0.8 + (-0.01 * (sin $ pi * t)))) 0.2
+  , atT 83.5 $ playerBowl "down" (\t -> (0.8 + (-0.01 * (cos $ pi * t)))) 0.12
+  ]
+
+trippyMetal :: ArrayOfEvents
+trippyMetal = [ atT 87.0 $ playerMetalC1 "mcla" (\t -> 1.0 + (0.1 * sin (0.1 * t * pi))) 0.08 ]
+
+raysOfLight :: ArrayOfEvents
+raysOfLight =
+  [ atT 85.5 $ playerALight ("aLight0") "aLight" (-0.5) (1500.0) (0.6)
+  , atT 85.9 $ playerALight ("aLight1") "aLight" (0.5) (2000.0) (0.55)
+  , atT 86.0 $ playerALight ("mhl1") "mhl-glitch-0" (-0.5) (1500.0) (0.4)
+  , atT 86.3 $ playerALight ("mhl2") "mhl-glitch-0" (0.5) (2000.0) (0.3)
+  , atT 87.5 $ playerALight ("aLight0") "aLight" (-0.5) (1500.0) (0.6)
+  , atT 87.9 $ playerALight ("aLight1") "aLight" (0.5) (2000.0) (0.55)
+  ]
+
+lastInASentimentalMood :: ArrayOfEvents
+lastInASentimentalMood =
+  [ atT 98.2 $ playerVoiceIASM "-a" 150.0 vocalGain
+  ]
+
+lastInASentimentalMoodEcho :: ArrayOfEvents
+lastInASentimentalMoodEcho =
+  [ atT 102.3 $ playerVoiceIASM "-b" 1400.0 0.5
+  , atT 102.5 $ playerVoiceIASM "-b" 1400.0 0.4
+  , atT 102.7 $ playerVoiceIASM "-c" 1700.0 0.3
+  , atT 102.9 $ playerVoiceIASM "-d" 2000.0 0.2
+  ]
+
+lastInASentimentalMoodDrones :: ArrayOfEvents
+lastInASentimentalMoodDrones =
+  [ atT 98.2 $ playerDrone "xIndr" "In-G4-78-l" 1.0
+  , atT 98.5 $ playerDrone "xAdr" "A-A4-106-l" 1.0
+  , atT 98.7 $ playerDrone "xSendr" "Sen-B4-61-l" 1.0
+  , atT 99.0 $ playerDrone "xTidr" "Ti-D5-19-l" 1.0
+  , atT 99.3 $ playerDrone "xMendr" "Men-E5-3-l" 1.0
+  , atT 99.6 $ playerDrone "xTaldr" "Tal-G5-24-l" 1.0
+  ]
+
+finalMoodCascade :: ArrayOfEvents
+finalMoodCascade =
+  ( mapWithIndex
+      ( \i (CSN (Cascade a b c _) d e) ->
+          atT (c + 100.0)
+            $ playerIctus
+                (d <> show i)
+                d
+                e
+                (min 0.9 (0.1 + 0.1 * (toNumber i)))
+                (\_ { yr } -> (0.93 + (0.14 * yr)))
+                0.0
+      )
+      (cascadesWithInfoInTime.acc)
+  )
+
+foundationUnderLastMood :: ArrayOfEvents
+foundationUnderLastMood =
+  [ atT (101.8) $ playerLowEnd "a" "lowC" 0.4
+  , atT (104.1) $ playerLowEnd "b" "lowC" 0.2
+  , atT 99.0 $ oscSimpl "cosc" 10.0 (conv440 (-33))
+  ]
+
+chimericOutro :: ArrayOfEvents
+chimericOutro =
+  [ atT (123.6 + eos) $ playerSmol "tinychimesa" (\t i -> (if i.isClicked then 2.0 else 1.0) + (i.yr * 0.6) + ((-0.05 * t))) 0.08
+  , atT (123.9 + eos) $ playerSmol "tinychimesb" (\t i -> (if i.isClicked then 3.6 else 1.8) + (i.xr * 1.0) + ((-0.1 * t))) 0.03
+  , atT (130.5 + eos) $ playerSmol "tinychimesc" (\t i -> (if i.isClicked then 2.0 else 1.0) + (i.yr * 0.6) + ((-0.05 * t))) 0.06
+  , atT (130.8 + eos) $ playerSmol "tinychimesd" (\t i -> (if i.isClicked then 3.6 else 1.8) + (i.xr * 1.0) + ((-0.1 * t))) 0.02
+  ]
+
+stuffAtEnd :: ArrayOfEvents
+stuffAtEnd =
+  let
+    phead = 107.0 + eos
+
+    offset = max 0.0 (playhead - (middleStartT + phead))
+  in
+    [ atT phead $ playerVoiceEnd offset
+    , atT phead $ playerGuitarEnd offset
+    , atT phead $ playerOrganOutro offset
+    ]
+
+playhead = 0.0 :: Number
