@@ -6,7 +6,7 @@
 ---------- README -------------
 -- This piece is arranged on klank.dev using purescript-audio-behaviors
 --   at https://github.com/mikesol/purescript-audio-behaviors.
--- To see how the arrangement is put together, start from the function `scene` on line 2354.
+-- To see how the arrangement is put together, I'd recommend starting from the function `scene`.
 -- The arrangement is a series of events. any event can be commented out to mute
 --   and moved in time by changing the first argument to `atT`.
 -- The arrangement is also on github at https://github.com/mikesol/in-a-sentimental-mood
@@ -42,18 +42,18 @@ import FRP.Behavior.Mouse (buttons, position)
 import FRP.Event.Mouse (Mouse, getMouse)
 import Foreign.Object as O
 import Math (abs, cos, pi, pow, sin)
-import Type.Klank.Dev (Klank', affable, klank)
+import Type.Klank.Dev (Klank', affable, defaultEngineInfo, klank)
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
 
 iasmEngineInfo =
-  { msBetweenSamples: 170
-  , msBetweenPings: 165
-  , fastforwardLowerBound: 0.025
-  , rewindUpperBound: 30.0
-  , initialOffset: 0.5
-  , doWebAudio: true
-  } ::
+  defaultEngineInfo
+    { msBetweenSamples = 130
+    , msBetweenPings = 165
+    , fastforwardLowerBound = 0.025
+    , rewindUpperBound = 0.35
+    , initialOffset = 0.5
+    } ::
     EngineInfo
 
 soundsIn =
@@ -1780,8 +1780,8 @@ playerGuitar tag name tos time info =
                 )
       )
 
-playerGuitarEnd :: MusicalEvent
-playerGuitarEnd time info =
+playerGuitarEnd :: Number -> MusicalEvent
+playerGuitarEnd tos time info =
   let
     len = fromMaybe 0.0 (M.lookup "endGuitar2" soundsEndMap)
   in
@@ -1791,12 +1791,12 @@ playerGuitarEnd time info =
             $ panner_ ("guitarEnd" <> "_panGuitarEnd") 0.0
                 ( gainT_' ("guitarEnd" <> "_panGuitarEnd")
                     (endGainFunction guitarGain time)
-                    (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 0.0)
+                    (playBufWithOffset_ ("guitarEnd" <> "_playerGuitar") ("End-endGuitar2") 1.0 tos)
                 )
       )
 
-playerOrganOutro :: MusicalEvent
-playerOrganOutro time info =
+playerOrganOutro :: Number -> MusicalEvent
+playerOrganOutro tos time info =
   let
     len = fromMaybe 0.0 (M.lookup "outroOrgan2" soundsEndMap)
   in
@@ -1806,7 +1806,7 @@ playerOrganOutro time info =
             $ panner_ ("outroOrgan2" <> "-outroOrgan2") 0.0
                 ( gainT_' ("outroOrgan2" <> "-outroOrgan2")
                     (endGainFunction 0.94 time)
-                    (playBufWithOffset_ ("outroOrgan2" <> "_playerGuitar") ("End-outroOrgan2") 1.0 0.0)
+                    (playBufWithOffset_ ("outroOrgan2" <> "_playerGuitar") ("End-outroOrgan2") 1.0 tos)
                 )
       )
 
@@ -1919,18 +1919,18 @@ playerLowEnd tag lc gn time info =
                 )
       )
 
-playerVoiceEnd :: MusicalEvent
-playerVoiceEnd time info =
+playerVoiceEnd :: Number -> MusicalEvent
+playerVoiceEnd tos time info =
   boundPlayer (len + 1.0) time
     ( defer \_ ->
         pure
-          $ panner_ ("endVoice2" <> "_panVoiceEndd") 0.0
-              ( ( ( gain_' ("verb'd_voiced") reverbBlend
-                      ( reverbVoice ("rvbVoiced")
-                          (vx ("withReverb"))
+          $ panner_ ("rendVoice2" <> "_panVoiceEndd") 0.0
+              ( ( ( gain_' ("rverb'd_voiced") reverbBlend
+                      ( reverbVoice ("rrvbVoiced")
+                          (vx ("rwithReverb"))
                       )
                   )
-                    + (gain_' ("verb'd_voice") dryBlend (vx ("withoutReverb")))
+                    + (gain_' ("verb'd_voice") dryBlend (vx ("rwithoutReverb")))
                 )
               )
     )
@@ -1942,7 +1942,7 @@ playerVoiceEnd time info =
         (endGainFunction (vocalGain - 0.07) time)
         ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd")
             ( mainHighpass ("endVoice2" <> tag <> "_highpassVoiceEnd")
-                (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd") ("End-endVoice2") 1.0 0.0)
+                (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd") ("End-endVoice2") 1.0 tos)
             )
         )
     )
@@ -1967,11 +1967,11 @@ playerVoiceIASM tag' hpf vol time info =
   len = fromMaybe 0.0 (M.lookup "endVoice2" soundsEndMap)
 
   vx tag =
-    ( gainT_' ("endVoice2" <> tag <> "_gainVoiceEnd2")
+    ( gainT_' ("rendVoice2" <> tag <> "_gainVoiceEnd2")
         ((epwf [ Tuple 0.0 vol, Tuple len vol ]) time)
-        ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd2")
-            ( highpass_ ("endVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
-                (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
+        ( vocalCompressor ("rendVoice2" <> tag <> "_compressorVoiceEnd2")
+            ( highpass_ ("rendVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
+                (playBufWithOffset_ ("rendVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
             )
         )
     )
@@ -1984,12 +1984,12 @@ playerVoiceIASMGlitch tag hpf vol time info =
     boundPlayer (len + 1.0) time
       ( defer \_ ->
           pure
-            $ panner_ ("endVoice2" <> tag <> "_panVoiceEnd2") 0.0
-                ( gainT_' ("endVoice2" <> tag <> "_gainVoiceEnd2")
+            $ panner_ ("xendVoice2" <> tag <> "_panVoiceEnd2") 0.0
+                ( gainT_' ("xendVoice2" <> tag <> "_gainVoiceEnd2")
                     ((epwf [ Tuple 0.0 vol, Tuple len vol ]) time)
-                    ( vocalCompressor ("endVoice2" <> tag <> "_compressorVoiceEnd2")
-                        ( highpass_ ("endVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
-                            (playBufWithOffset_ ("endVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
+                    ( vocalCompressor ("xendVoice2" <> tag <> "_compressorVoiceEnd2")
+                        ( highpass_ ("xendVoice2" <> tag <> "_highpassVoiceEnd2") hpf 1.0
+                            (playBufWithOffset_ ("xendVoice2" <> tag <> "_playerVoiceEnd2") ("End-inASentimentalMood") 1.0 0.0)
                         )
                     )
                 )
@@ -2386,7 +2386,7 @@ cascadesWithInfoInTime =
   ) ::
     { acc :: Array CSN, dur :: Number }
 
-startAt = 24.0 :: Number
+middleStartT = 24.0 :: Number
 
 eos = 0.9 :: Number
 
@@ -2423,7 +2423,7 @@ scene w h mouse acc time = f <$> pos' <*> isClicked'
                       :| fold
                           ( map
                               ( \func ->
-                                  func
+                                  (atT playhead func)
                                     time
                                     { isClicked
                                     , justClicked
@@ -2439,7 +2439,7 @@ scene w h mouse acc time = f <$> pos' <*> isClicked'
                           :| fold
                               ( map
                                   ( \func ->
-                                      func
+                                      (atT playhead func)
                                         time
                                         { isClicked
                                         , justClicked
@@ -2447,7 +2447,7 @@ scene w h mouse acc time = f <$> pos' <*> isClicked'
                                         }
                                   )
                                   ( ( mains
-                                        <> ( map (atT (startAt))
+                                        <> ( map (atT (middleStartT))
                                               ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 6))
                                                   <> tongueDrips
                                                   <> lights
@@ -2472,9 +2472,7 @@ scene w h mouse acc time = f <$> pos' <*> isClicked'
                                                   <> lastInASentimentalMoodDrones
                                                   <> finalMoodCascade
                                                   <> foundationUnderLastMood
-                                                  <> [ atT (107.0 + eos) $ playerVoiceEnd ]
-                                                  <> [ atT (107.0 + eos) $ playerGuitarEnd ]
-                                                  <> [ atT (107.0 + eos) $ playerOrganOutro ]
+                                                  <> stuffAtEnd
                                                   <> chimericOutro
                                               )
                                           )
@@ -2535,9 +2533,12 @@ intro =
 
 mains :: ArrayOfEvents
 mains =
-  [ atT startAt $ playerVoice "Voice" "voice" 0.0
-  , atT startAt $ playerGuitar "Guitar" "guitar" 0.0
-  ]
+  let
+    offset = max 0.0 (playhead - middleStartT)
+  in
+    [ atT middleStartT $ playerVoice "Voice" "voice" offset
+    , atT middleStartT $ playerGuitar "Guitar" "guitar" offset
+    ]
 
 tongueDrips :: ArrayOfEvents
 tongueDrips =
@@ -2743,3 +2744,17 @@ chimericOutro =
   , atT (130.5 + eos) $ playerSmol "tinychimesc" (\t -> 1.0 + ((-0.05 * t))) 0.06
   , atT (130.8 + eos) $ playerSmol "tinychimesd" (\t -> 1.8 + ((-0.1 * t))) 0.02
   ]
+
+stuffAtEnd :: ArrayOfEvents
+stuffAtEnd =
+  let
+    phead = 107.0 + eos
+
+    offset = max 0.0 (playhead - (middleStartT + phead))
+  in
+    [ atT phead $ playerVoiceEnd offset
+    , atT phead $ playerGuitarEnd offset
+    , atT phead $ playerOrganOutro offset
+    ]
+
+playhead = 0.0 :: Number
