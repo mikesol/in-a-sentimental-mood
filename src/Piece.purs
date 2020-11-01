@@ -16,6 +16,7 @@
 module Klank.IASM.Piece where
 
 import Prelude
+import Color (rgb)
 import Control.Parallel (parallel, sequential)
 import Control.Promise (toAffE)
 import Data.Array (filter, foldl, mapWithIndex, fold, head, last, range, span)
@@ -25,7 +26,7 @@ import Data.Lazy (Lazy, defer, force)
 import Data.Lens (_1, _2, over, traversed)
 import Data.List ((:), List(..))
 import Data.Map as M
-import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.NonEmpty ((:|))
 import Data.Profunctor (lcmap)
 import Data.Set (isEmpty)
@@ -37,10 +38,12 @@ import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay, try)
 import Effect.Exception (Error)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, EngineInfo, IAudioUnit(..), bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
+import FRP.Behavior.Audio (AV(..), AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, CanvasInfo(..), EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
 import FRP.Behavior.Mouse (buttons, position)
 import FRP.Event.Mouse (Mouse, getMouse)
 import Foreign.Object as O
+import Graphics.Drawing (circle, fillColor, filled, text)
+import Graphics.Drawing.Font (bold, font, sansSerif)
 import Math (abs, cos, pi, pow, sin)
 import Type.Klank.Dev (Klank', affable, defaultEngineInfo, klank)
 import Web.HTML (window)
@@ -48,10 +51,10 @@ import Web.HTML.Window (innerHeight, innerWidth)
 
 iasmEngineInfo =
   defaultEngineInfo
-    { msBetweenSamples = 130
-    , msBetweenPings = 165
+    { msBetweenSamples = 190
+    , msBetweenPings = 185
     , fastforwardLowerBound = 0.025
-    , rewindUpperBound = 0.35
+    , rewindUpperBound = 0.4
     , initialOffset = 0.5
     } ::
     EngineInfo
@@ -246,7 +249,7 @@ soundsMoodMap :: M.Map String Number
 soundsMoodMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-" <> show y) b) soundsMood)
 
 soundsFull =
-  [ Tuple "guitar" 100.0
+  [ Tuple "guitar2" 100.0
   , Tuple "voice" 100.0
   ] ::
     Array (Tuple String Number)
@@ -443,6 +446,10 @@ type IASMInteractiveInfo
   = { isClicked :: Boolean
     , justClicked :: Boolean
     , pos :: Maybe { x :: Number, y :: Number }
+    , w :: Number
+    , h :: Number
+    , yr :: Number
+    , xr :: Number
     }
 
 main :: Klank' IASMAccumulator
@@ -817,17 +824,20 @@ playerIn name' opts' time info =
   name = "In-G4-" <> show name' <> "-l"
 
 simplIn :: Number -> Int -> String -> String -> Number -> Number -> Number -> Number -> MusicalEvent
-simplIn os snd tg t2 ps pe fs fe =
+simplIn os snd tg t2 ps pe fs fe time info@{ yr } =
   ( atT (0.0 + os)
-      $ playerIn snd
+      ( playerIn snd
           ( \l ->
               { tag: tg <> t2
               , pan: epwf [ Tuple 0.0 ps, Tuple l pe ]
               , gain: epwf [ Tuple 0.0 0.0, Tuple (l - 1.0) 1.0, Tuple (l - 0.6) 0.0, Tuple l 0.0 ]
-              , hpff: epwf [ Tuple 0.0 fs, Tuple l fe ]
+              , hpff: epwf [ Tuple 0.0 (fs + (1000.0 * yr)), Tuple l (fe + (1000.0 * yr)) ]
               , hpfq: epwf [ Tuple 0.0 10.0, Tuple l 1.0 ]
               }
           )
+      )
+      time
+      info
   )
 
 fadeIn :: Number -> String -> ArrayOfEvents
@@ -1412,10 +1422,7 @@ playerMood pitch name' opts' time info =
   name = "Mood-" <> pitch <> "-" <> show name' <> "-l"
 
 data MoodInfo
-  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) MoodPan
-
-data MoodPan
-  = MoodPan Number Number Number
+  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) Number
 
 type FiltSig
   = forall ch. Pos ch => String -> AudioParameter Number -> AudioParameter Number -> AudioUnit ch -> AudioUnit ch
@@ -1428,19 +1435,23 @@ lowOs = 1.3 :: Number
 moodPlayer2 :: Number -> String -> ArrayOfEvents
 moodPlayer2 os tg =
   map
-    ( \(MoodInfo pitch tgn x y f filt q gf (MoodPan _a _b _c)) ->
-        ( atT (y + os)
-            $ playerMood pitch x
-                ( \l ->
-                    { tag: tgn <> tg <> "mp1" <> pitch <> (show x) <> tgn <> tg
-                    , pan: (\t -> _a * sin (_b * (t + _c) * pi))
-                    , filt
-                    , offset: 0.0
-                    , gain: gf l
-                    , bpff: epwf [ Tuple 0.0 f, Tuple 0.0 f ]
-                    , bpfq: epwf [ Tuple 0.0 q, Tuple l q ]
-                    }
-                )
+    ( \(MoodInfo pitch tgn x y f filt q gf _pan) ->
+        ( \time info@{ xr } ->
+            atT (y + os)
+              ( playerMood pitch x
+                  ( \l ->
+                      { tag: tgn <> tg <> "mp1" <> pitch <> (show x) <> tgn <> tg
+                      , pan: (const (_pan - (xr * 2.0 * _pan)))
+                      , filt
+                      , offset: 0.0
+                      , gain: gf l
+                      , bpff: epwf [ Tuple 0.0 f, Tuple 0.0 f ]
+                      , bpfq: epwf [ Tuple 0.0 q, Tuple l q ]
+                      }
+                  )
+              )
+              time
+              info
         )
     )
     ( ( map
@@ -1454,7 +1465,7 @@ moodPlayer2 os tg =
                   4.0
                   -- shifted back to make more sense
                   (\l -> epwf [ Tuple 0.0 0.0, Tuple 0.4 (0.9 - x), Tuple (l - 0.3) (0.9 - x), Tuple (l - 0.15) 0.0 ])
-                  (MoodPan 0.0 0.2 0.2)
+                  0.0
           )
           (range 0 5)
       )
@@ -1463,67 +1474,67 @@ moodPlayer2 os tg =
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-              (MoodPan 0.3 0.2 0.2)
+              (-0.2)
           , MoodInfo "F#4" "-" 0 1.45
               400.0 -- (conv440 (-15))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple l 0.4 ])
-              (MoodPan 0.4 0.1 0.35)
+              0.2
           , MoodInfo "G4" "-" 4 1.15
               450.0 --(conv440 (22))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.1 0.5 (-0.7))
+              (-0.7)
           , MoodInfo "A4" "-" 5 1.3
               500.0 --(conv440 (-12))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.05 1.0 0.05)
+              (0.7)
           , MoodInfo "B4" "-" 2 1.0
               550.0 --(conv440 (14))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.15 0.4 0.0)
+              (-1.0)
           , MoodInfo "C5" "-" 2 1.6
               600.0 --(conv440 (3))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.6 0.6 (-0.8))
+              (1.0)
           , MoodInfo "D5" "-" 2 0.4
               650.0 -- (conv440 (-7))
               bypassFilt
               4.0
               (\l -> epwf [ Tuple 0.0 0.4, Tuple (l - 1.0) 0.4, Tuple l 0.0 ])
-              (MoodPan 0.5 0.75 0.8)
+              (-0.1)
           , MoodInfo "E5" "-" 0 0.3
               700.0 --(conv440 (7))
               bypassFilt
               3.0
               (\l -> epwf [ Tuple 0.0 0.2, Tuple (l - 1.0) 0.2, Tuple l 0.0 ])
-              (MoodPan 0.9 0.15 (-0.2))
+              (0.1)
           , MoodInfo "F#5" "-" 0 0.3
               800.0 --(conv440 (9))
               bypassFilt
               2.0
               (\l -> epwf [ Tuple 0.0 0.2, Tuple (l - 1.0) 0.2, Tuple l 0.0 ])
-              (MoodPan 0.3 0.5 0.9)
+              0.0
           , MoodInfo "G5" "-" 3 0.5
               900.0 --(conv440 (10))
               bypassFilt
               2.0
               (\l -> epwf [ Tuple 0.0 0.3, Tuple l 0.3 ])
-              (MoodPan 0.4 0.1 (-0.2))
+              (-0.4)
           , MoodInfo "A5" "-" 2 0.0
               1000.0 --(conv440 0)
               bypassFilt
               0.01
               (\l -> epwf [ Tuple 0.0 1.0, Tuple 7.0 1.0, Tuple l 0.0 ])
-              (MoodPan 0.3 0.1 0.5)
+              (0.4)
           ]
     )
 
@@ -1536,7 +1547,7 @@ endGainFunction :: Number -> Number -> AudioParameter Number
 endGainFunction gl time = ((epwf [ Tuple 0.0 gl, Tuple 30.0 gl, Tuple 38.0 (gl / 2.0), Tuple 53.0 0.0 ]) time)
 
 playerWindChimes :: MusicalEvent
-playerWindChimes time info =
+playerWindChimes time info@{ yr, xr } =
   boundPlayer (40.0) time
     ( defer \_ ->
         pure
@@ -1551,11 +1562,11 @@ playerWindChimes time info =
                     )
                       time
                   )
-                  (playBufWithOffset_ ("Random-wind_chimespl") ("Random-wind_chimes") (1.0 + 0.1 + (sin $ 0.1 * pi * time)) 0.0)
+                  (playBufWithOffset_ ("Random-wind_chimespl") ("Random-wind_chimes") (1.0 + 0.1 + (sin $ (0.15 * yr) * pi * time)) 0.0)
               )
     )
 
-playerMel1 :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerMel1 :: String -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
 playerMel1 tag ratef vol time info =
   boundPlayer (18.0) time
     ( defer \_ ->
@@ -1570,7 +1581,7 @@ playerMel1 tag ratef vol time info =
                     )
                       time
                   )
-                  ( playBuf_ ("mel-1-impl-0" <> tag) ("mel-1") (ratef time)
+                  ( playBuf_ ("mel-1-impl-0" <> tag) ("mel-1") (ratef time info)
                   )
               )
     )
@@ -1616,7 +1627,7 @@ playerCro tag ratef vol time info =
               )
     )
 
-playerMel2 :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerMel2 :: String -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
 playerMel2 tag ratef vol time info =
   boundPlayer (18.0) time
     ( defer \_ ->
@@ -1631,7 +1642,7 @@ playerMel2 tag ratef vol time info =
                     )
                       time
                   )
-                  ( playBuf_ ("mel-2-impl-0" <> tag) ("mel-2") (ratef time)
+                  ( playBuf_ ("mel-2-impl-0" <> tag) ("mel-2") (ratef time info)
                   )
               )
     )
@@ -1656,7 +1667,7 @@ playerMetalC1 tag ratef vol time info =
               )
     )
 
-playerSmol :: String -> (Number -> Number) -> Number -> MusicalEvent
+playerSmol :: String -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
 playerSmol tag ratef vol time info =
   boundPlayer (20.0) time
     ( defer \_ ->
@@ -1671,7 +1682,7 @@ playerSmol tag ratef vol time info =
                     )
                       time
                   )
-                  ( playBuf_ ("xmchim-0" <> tag) ("tiny-chimes-1") (ratef time)
+                  ( playBuf_ ("xmchim-0" <> tag) ("tiny-chimes-1") (ratef time info)
                   )
               )
     )
@@ -1697,7 +1708,7 @@ playerBowl tag ratef vol time info =
     )
 
 playerWindChimes2 :: MusicalEvent
-playerWindChimes2 time info =
+playerWindChimes2 time info@{ yr } =
   boundPlayer (10.0) time
     ( defer \_ ->
         pure
@@ -1713,9 +1724,9 @@ playerWindChimes2 time info =
                   )
                   ( playBufT_ ("Random-wind_chimesplx") ("Random-wind_chimes")
                       ( ( epwf
-                            [ Tuple 0.0 1.8
-                            , Tuple 8.0 3.0
-                            , Tuple 10.0 3.0
+                            [ Tuple 0.0 (1.8 + yr)
+                            , Tuple 8.0 (3.0 + yr)
+                            , Tuple 10.0 (3.0 + yr)
                             ]
                         )
                           time
@@ -1725,7 +1736,7 @@ playerWindChimes2 time info =
     )
 
 playerGlassRub :: MusicalEvent
-playerGlassRub time info =
+playerGlassRub time info@{ xr } =
   boundPlayer (19.8) time
     ( defer \_ ->
         pure
@@ -1743,7 +1754,7 @@ playerGlassRub time info =
                     )
                       time
                   )
-                  (playBufWithOffset_ ("glassRubPlay") ("Random-glass-bell-rubbing1") 1.0 0.0)
+                  (playBufWithOffset_ ("glassRubPlay") ("Random-glass-bell-rubbing1") (0.95 + (0.1 * xr)) 0.0)
               )
     )
 
@@ -1996,7 +2007,7 @@ playerVoiceIASMGlitch tag hpf vol time info =
       )
 
 playerLights :: String -> String -> Number -> Number -> Number -> MusicalEvent
-playerLights tag' name prate hpf vol time info =
+playerLights tag' name prate hpf vol time info@{ yr } =
   let
     tag = tag' <> name
   in
@@ -2007,7 +2018,7 @@ playerLights tag' name prate hpf vol time info =
                 ( gainT_' (tag <> "_gainLights")
                     ((epwf [ Tuple 0.0 0.2, Tuple 0.11 vol, Tuple 1.0 vol, Tuple 3.0 0.0 ]) time)
                     ( vocalCompressor (tag <> "_compressorLights")
-                        ( highpass_ (tag <> "_highpassLights") hpf 1.0
+                        ( highpass_ (tag <> "_highpassLights") (hpf + (1000.0 * yr)) 1.0
                             (playBufWithOffset_ (tag <> "_playerLights") (name) prate 0.0)
                         )
                     )
@@ -2114,17 +2125,17 @@ playerKiss tag gd hpf time info =
               )
     )
 
-playerIctus :: String -> String -> Number -> Number -> (Number -> Number) -> Number -> MusicalEvent
-playerIctus tag name len vos rosf tos time info =
+playerIctus :: String -> String -> Number -> Number -> (Number -> IASMInteractiveInfo -> Number) -> Number -> MusicalEvent
+playerIctus tag name len vos rosf tos time info@{ xr } =
   boundPlayer (len + 2.0) time
     ( defer \_ ->
         pure
           $ panner_ (tag <> "_panIctus") 0.0
               ( gainT_' (tag <> "_gainIctus")
                   ((epwf [ Tuple 0.0 0.0, Tuple (len / 2.0) vos, Tuple len 0.0 ]) time)
-                  ( highpassT_ (tag <> "_highpassIctus") ((epwf [ Tuple 0.0 200.0, Tuple len 3500.0 ]) time)
+                  ( highpassT_ (tag <> "_highpassIctus") ((epwf [ Tuple 0.0 200.0, Tuple len (400.0 + (5000.0 * xr)) ]) time)
                       ((epwf [ Tuple 0.0 1.0, Tuple len 1.0 ]) time)
-                      (playBufWithOffset_ (tag <> "_playerIctus") (name) (rosf time) tos)
+                      (playBufWithOffset_ (tag <> "_playerIctus") (name) (rosf time info) tos)
                   )
               )
     )
@@ -2388,11 +2399,18 @@ cascadesWithInfoInTime =
 
 middleStartT = 24.0 :: Number
 
-eos = 0.9 :: Number
+eos = (-1.6) :: Number
 
-lightsStart = 27.5 :: Number
+lightsStart = 27.0 :: Number
 
 roseMult = 1.2 :: Number
+
+-- 24
+canMove :: Number -> Boolean
+canMove n = n >= 3.5 && n <= 27.0 || n >= 67.0 && n <= 79.0 || n >= 124.0 && n <= 140.0
+
+canClick :: Number -> Boolean
+canClick n = n >= 147.0
 
 -- for Arline Solomon
 scene ::
@@ -2400,9 +2418,10 @@ scene ::
   Number ->
   Mouse ->
   IASMAccumulator ->
+  CanvasInfo ->
   Number ->
-  Behavior (IAudioUnit D2 IASMAccumulator)
-scene w h mouse acc time = f <$> pos' <*> isClicked'
+  Behavior (AV D2 IASMAccumulator)
+scene w h mouse acc (CanvasInfo ci) = lcmap (_ + playhead) (\t -> f <$> pos' <*> isClicked' <*> pure t)
   where
   pos' :: Behavior (Maybe { x :: Number, y :: Number })
   pos' =
@@ -2415,74 +2434,134 @@ scene w h mouse acc time = f <$> pos' <*> isClicked'
   isClicked' :: Behavior Boolean
   isClicked' = map (not <<< isEmpty) $ buttons mouse
 
-  f pos isClicked =
-    ( IAudioUnit
-        ( speaker
-            ( ( gain_ "introMaster" 2.0
-                  ( zero
-                      :| fold
-                          ( map
-                              ( \func ->
-                                  (atT playhead func)
-                                    time
-                                    { isClicked
-                                    , justClicked
-                                    , pos
-                                    }
-                              )
-                              intro
-                          )
-                  )
-              )
-                :| ( gain_ "afterMaster" 1.0
+  f pos isClicked time =
+    ( AV
+        ( Just
+            $ speaker
+                ( ( gain_ "introMaster" 2.0
                       ( zero
                           :| fold
                               ( map
                                   ( \func ->
-                                      (atT playhead func)
+                                      func
                                         time
                                         { isClicked
                                         , justClicked
                                         , pos
+                                        , w
+                                        , h
+                                        , yr
+                                        , xr
                                         }
                                   )
-                                  ( ( mains
-                                        <> ( map (atT (middleStartT))
-                                              ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 6))
-                                                  <> tongueDrips
-                                                  <> lights
-                                                  <> harmonicFlourish
-                                                  <> firstBouquet
-                                                  <> thingsAreNotWhatTheySeem
-                                                  <> laggyRoseChoir
-                                                  <> secondBouquet
-                                                  <> duke1935
-                                                  <> trippyMetal
-                                                  <> bowlStrike
-                                                  <> raysOfLight
-                                                  <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
-                                                  <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
-                                                  <> [ atT 97.6 $ oscSimpl "dominant" 5.7 (conv440 (-19))
-                                                    ]
-                                                  <> lastInASentimentalMood
-                                                  <> lastInASentimentalMoodEcho
-                                                  <> [ atT 101.4 $ playerCro "ctz" (const 1.0) 0.25
-                                                    ]
-                                                  <> [ atT 98.4 $ playerVoiceIASMGlitch "ga" 1000.0 0.4, atT 98.6 $ playerVoiceIASMGlitch "ga" 1500.0 0.3, atT 98.8 $ playerVoiceIASMGlitch "ga" 2000.0 0.2 ]
-                                                  <> lastInASentimentalMoodDrones
-                                                  <> finalMoodCascade
-                                                  <> foundationUnderLastMood
-                                                  <> stuffAtEnd
-                                                  <> chimericOutro
-                                              )
-                                          )
-                                    )
-                                  )
+                                  intro
                               )
                       )
                   )
-                : Nil
-            )
+                    :| ( gain_ "afterMaster" 1.0
+                          ( zero
+                              :| fold
+                                  ( map
+                                      ( \func ->
+                                          func
+                                            time
+                                            { isClicked
+                                            , justClicked
+                                            , pos
+                                            , w
+                                            , h
+                                            , yr
+                                            , xr
+                                            }
+                                      )
+                                      ( ( mains
+                                            <> ( map (atT (middleStartT))
+                                                  ( (map (\i -> atT (36.5 + (toNumber i * 0.6)) $ playerKiss (show i) (toNumber i * 0.02) (1700.0 + (toNumber i * 200.0))) (range 0 6))
+                                                      <> tongueDrips
+                                                      <> lights
+                                                      <> harmonicFlourish
+                                                      <> firstBouquet
+                                                      <> thingsAreNotWhatTheySeem
+                                                      <> laggyRoseChoir
+                                                      <> secondBouquet
+                                                      <> duke1935
+                                                      <> trippyMetal
+                                                      <> bowlStrike
+                                                      <> raysOfLight
+                                                      <> [ atT 85.406 $ playerGuitar2 ("guitarHack") ]
+                                                      <> [ atT 76.506 $ playerRodeFill ("rdfl") ]
+                                                      <> [ atT 97.6 $ oscSimpl "dominant" 5.7 (conv440 (-19))
+                                                        ]
+                                                      <> lastInASentimentalMood
+                                                      <> lastInASentimentalMoodEcho
+                                                      <> [ atT 101.4 $ playerCro "ctz" (const 1.0) 0.25
+                                                        ]
+                                                      <> [ atT 98.4 $ playerVoiceIASMGlitch "ga" 1000.0 0.4, atT 98.6 $ playerVoiceIASMGlitch "ga" 1500.0 0.3, atT 98.8 $ playerVoiceIASMGlitch "ga" 2000.0 0.2 ]
+                                                      <> lastInASentimentalMoodDrones
+                                                      <> finalMoodCascade
+                                                      <> foundationUnderLastMood
+                                                      <> stuffAtEnd
+                                                      <> chimericOutro
+                                                  )
+                                              )
+                                        )
+                                      )
+                                  )
+                          )
+                      )
+                    : Nil
+                )
+        )
+        ( Just
+            $ ( ( text
+                    (font sansSerif 14 bold)
+                    (5.0)
+                    (20.0)
+                    (fillColor (rgb 0 0 0))
+                    "circle under \"can move mouse\" means move the mouse to change the music."
+                )
+                  <> ( text
+                        (font sansSerif 14 bold)
+                        (5.0)
+                        (40.0)
+                        (fillColor (rgb 0 0 0))
+                        "circle under \"can click mouse\" means click the mouse to change the music."
+                    )
+                  <> ( text
+                        (font sansSerif 14 bold)
+                        (ci.w / 4.0 - 60.0)
+                        (ci.h / 4.0)
+                        (fillColor (rgb 0 0 0))
+                        "can move mouse"
+                    )
+                  <> ( if (canMove time) then
+                        ( filled
+                            ( fillColor
+                                (rgb 255 0 255)
+                            )
+                            (circle (ci.w / 4.0) (ci.h / 4.0 + 40.0) 20.0)
+                        )
+                      else
+                        mempty
+                    )
+                  <> ( text
+                        (font sansSerif 14 bold)
+                        (ci.w * 0.75 - 60.0)
+                        (ci.h * 0.75)
+                        (fillColor (rgb 0 0 0))
+                        "can click mouse"
+                    )
+                  <> ( if (canClick time) then
+                        ( filled
+                            ( fillColor
+                                (rgb 38 179 32)
+                            )
+                            (circle (ci.w * 0.75) (ci.h * 0.75 + 40.0) 20.0)
+                        )
+                      else
+                        mempty
+                    )
+              )
         )
         ( acc
             { isClicked = isClicked
@@ -2491,6 +2570,10 @@ scene w h mouse acc time = f <$> pos' <*> isClicked'
     )
     where
     justClicked = not acc.isClicked && isClicked
+
+    yr = maybe 0.0 (\{ y } -> y / h) pos
+
+    xr = maybe 0.0 (\{ x } -> x / w) pos
 
 type MusicalEvent
   = Number -> IASMInteractiveInfo -> List (AudioUnit D2)
@@ -2537,16 +2620,16 @@ mains =
     offset = max 0.0 (playhead - middleStartT)
   in
     [ atT middleStartT $ playerVoice "Voice" "voice" offset
-    , atT middleStartT $ playerGuitar "Guitar" "guitar" offset
+    , atT middleStartT $ playerGuitar "Guitar" "guitar2" offset
     ]
 
 tongueDrips :: ArrayOfEvents
 tongueDrips =
-  [ atT 36.6 $ playerMel1 "a" (const 1.0) 0.1
-  , atT 43.0 $ playerMel1 "b" (\t -> 2.0 + (0.1 * sin (0.1 * t * pi))) 0.08
-  , atT 45.6 $ playerMel1 "c" (\t -> 4.0 + (0.1 * sin (0.1 * t * pi))) 0.02
-  , atT 50.0 $ playerMel2 "d" (const 1.0) 0.1
-  , atT 50.0 $ playerMel2 "e" (\t -> 4.0 + (0.1 * sin (0.1 * t * pi))) 0.1
+  [ atT 36.6 $ playerMel1 "a" (\t i -> 1.0) 0.1
+  , atT 43.0 $ playerMel1 "b" (\t i -> 1.95 + (0.1 * i.xr)) 0.08
+  , atT 45.6 $ playerMel1 "c" (\t i -> 3.9 + (0.2 * i.yr)) 0.02
+  , atT 50.0 $ playerMel2 "d" (\t i -> (0.95) + (0.1 * i.xr)) 0.1
+  , atT 50.0 $ playerMel2 "e" (\t i -> (3.9) + (0.2 * i.yr)) 0.1
   ]
 
 lights :: ArrayOfEvents
@@ -2559,7 +2642,7 @@ lights =
             atT (lightsStart + 0.0 + (nf * 0.45))
               $ playerLights (show i) "Lights-b3-l" 1.0 (1000.0 + (nf * 200.0)) (0.85 - (abs (nf - 5.0) * 0.05))
       )
-      (range 0 7)
+      (range 0 10)
   )
     <> ( map
           ( \i ->
@@ -2569,7 +2652,7 @@ lights =
                 atT (lightsStart + 0.05 + (nf * 0.5))
                   $ playerLights (show i) "Lights-g2-l" 1.02 (1400.0 + (nf * 200.0)) (0.65 - (abs (nf - 3.0) * 0.05))
           )
-          (range 0 4)
+          (range 0 7)
       )
     <> ( map
           ( \i ->
@@ -2579,7 +2662,7 @@ lights =
                 atT (lightsStart + 0.15 + (nf * 0.6))
                   $ playerLights (show i) "Lights-e0-l" 1.0 (1500.0 + (nf * 200.0)) (0.45 - (abs (nf - 1.0) * 0.05))
           )
-          (range 0 3)
+          (range 0 6)
       )
     <> ( map
           ( \i ->
@@ -2589,7 +2672,7 @@ lights =
                 atT (lightsStart + 0.2 + (nf * 0.9))
                   $ playerLights (show i) "Lights-c2-l" 1.0 (1700.0 + (nf * 200.0)) (0.65 - (nf * 0.05))
           )
-          (range 0 1)
+          (range 0 4)
       )
 
 harmonicFlourish :: ArrayOfEvents
@@ -2683,8 +2766,8 @@ duke1935 =
 
 bowlStrike :: ArrayOfEvents
 bowlStrike =
-  [ atT 84.0 $ playerBowl "up" (\t -> (0.8 + (-0.01 * (sin $ pi * t)))) 0.2
-  , atT 84.0 $ playerBowl "down" (\t -> (0.8 + (-0.01 * (cos $ pi * t)))) 0.12
+  [ atT 83.5 $ playerBowl "up" (\t -> (0.8 + (-0.01 * (sin $ pi * t)))) 0.2
+  , atT 83.5 $ playerBowl "down" (\t -> (0.8 + (-0.01 * (cos $ pi * t)))) 0.12
   ]
 
 trippyMetal :: ArrayOfEvents
@@ -2726,7 +2809,16 @@ lastInASentimentalMoodDrones =
 finalMoodCascade :: ArrayOfEvents
 finalMoodCascade =
   ( mapWithIndex
-      (\i (CSN (Cascade a b c _) d e) -> atT (c + 100.0) $ playerIctus (d <> show i) d e (min 0.9 (0.1 + 0.1 * (toNumber i))) (\_ -> 1.0) 0.0)
+      ( \i (CSN (Cascade a b c _) d e) ->
+          atT (c + 100.0)
+            $ playerIctus
+                (d <> show i)
+                d
+                e
+                (min 0.9 (0.1 + 0.1 * (toNumber i)))
+                (\_ { yr } -> (0.93 + (0.14 * yr)))
+                0.0
+      )
       (cascadesWithInfoInTime.acc)
   )
 
@@ -2739,10 +2831,10 @@ foundationUnderLastMood =
 
 chimericOutro :: ArrayOfEvents
 chimericOutro =
-  [ atT (123.6 + eos) $ playerSmol "tinychimesa" (\t -> 1.0 + ((-0.05 * t))) 0.08
-  , atT (123.9 + eos) $ playerSmol "tinychimesb" (\t -> 1.8 + ((-0.1 * t))) 0.03
-  , atT (130.5 + eos) $ playerSmol "tinychimesc" (\t -> 1.0 + ((-0.05 * t))) 0.06
-  , atT (130.8 + eos) $ playerSmol "tinychimesd" (\t -> 1.8 + ((-0.1 * t))) 0.02
+  [ atT (123.6 + eos) $ playerSmol "tinychimesa" (\t i -> (if i.isClicked then 2.0 else 1.0) + (i.yr * 0.6) + ((-0.05 * t))) 0.08
+  , atT (123.9 + eos) $ playerSmol "tinychimesb" (\t i -> (if i.isClicked then 3.6 else 1.8) + (i.xr * 1.0) + ((-0.1 * t))) 0.03
+  , atT (130.5 + eos) $ playerSmol "tinychimesc" (\t i -> (if i.isClicked then 2.0 else 1.0) + (i.yr * 0.6) + ((-0.05 * t))) 0.06
+  , atT (130.8 + eos) $ playerSmol "tinychimesd" (\t i -> (if i.isClicked then 3.6 else 1.8) + (i.xr * 1.0) + ((-0.1 * t))) 0.02
   ]
 
 stuffAtEnd :: ArrayOfEvents
