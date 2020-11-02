@@ -8,14 +8,14 @@ import Data.Int (toNumber)
 import Data.Lens (_1, _2, over, traversed)
 import Data.List ((:), List(..))
 import Data.Map as M
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (fromMaybe, maybe)
 import Data.NonEmpty ((:|))
 import Data.Profunctor (lcmap)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (D1, D2)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpassT_, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter, AudioUnit, defaultParam, gainT_', highpassT_, pannerMono_, playBufWithOffset_, runInBrowser, speaker)
 import Foreign.Object as O
 import Math (cos, pi, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
@@ -35,7 +35,7 @@ soundsTiMap = M.fromFoldable soundsTi
 
 kr = (toNumber defaultEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
-epwf :: Array (Tuple Number Number) -> Number -> AudioParameter Number
+epwf :: Array (Tuple Number Number) -> Number -> AudioParameter
 epwf p s =
   let
     ht = span ((s >= _) <<< fst) p
@@ -48,9 +48,9 @@ epwf p s =
         $ head ht.rest
   in
     if (fst right - s) < kr then
-      AudioParameter
-        { param: (snd right)
-        , timeOffset: (fst right - s)
+      defaultParam
+        { param = (snd right)
+        , timeOffset = (fst right - s)
         }
     else
       let
@@ -58,7 +58,7 @@ epwf p s =
 
         b = (snd right - (m * fst right))
       in
-        AudioParameter { param: (m * s + b), timeOffset: 0.0 }
+        defaultParam { param = (m * s + b), timeOffset = 0.0 }
 
 fromCloud :: String -> String
 fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
@@ -90,9 +90,9 @@ atT t = lcmap (_ - t)
 type PlayerTiOpts
   = { tag :: String
     , pan :: Number -> Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerTi :: Int -> (Number -> PlayerTiOpts) -> Number -> List (AudioUnit D2)

@@ -38,7 +38,7 @@ import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay, try)
 import Effect.Exception (Error)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AV(..), AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, CanvasInfo(..), EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
+import FRP.Behavior.Audio (AV(..), AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, CanvasInfo(..), EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, defaultParam, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
 import FRP.Behavior.Mouse (buttons, position)
 import FRP.Event.Mouse (Mouse, getMouse)
 import Foreign.Object as O
@@ -724,7 +724,7 @@ boundPlayer len time a = if (time) + kr >= 0.0 && time < (len) then force a else
 
 kr = (toNumber iasmEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
-epwf :: Array (Tuple Number Number) -> Number -> AudioParameter Number
+epwf :: Array (Tuple Number Number) -> Number -> AudioParameter
 epwf p s =
   let
     ht = span ((s >= _) <<< fst) p
@@ -737,9 +737,9 @@ epwf p s =
         $ head ht.rest
   in
     if (fst right - s) < kr then
-      AudioParameter
-        { param: (snd right)
-        , timeOffset: (fst right - s)
+      defaultParam
+        { param = (snd right)
+        , timeOffset = (fst right - s)
         }
     else
       let
@@ -747,7 +747,7 @@ epwf p s =
 
         b = (snd right - (m * fst right))
       in
-        AudioParameter { param: (m * s + b), timeOffset: 0.0 }
+        defaultParam { param = (m * s + b), timeOffset = 0.0 }
 
 fromCloud :: String -> String
 fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
@@ -758,10 +758,10 @@ fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-m
 -- In
 type PlayerInOpts
   = { tag :: String
-    , pan :: Number -> AudioParameter Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , pan :: Number -> AudioParameter
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerDrone :: String -> String -> Number -> MusicalEvent
@@ -786,7 +786,7 @@ oscSimpl' :: Number -> String -> Number -> Number -> MusicalEvent
 oscSimpl' gn tag end freq time info =
   if time + kr >= 0.0 && time < (end + 1.0) then
     let
-      (AudioParameter { param, timeOffset }) =
+      ({ param, timeOffset }) =
         ( epwf
             [ Tuple 0.0 0.0, Tuple 3.0 (gn), Tuple end 0.0 ]
         )
@@ -795,7 +795,11 @@ oscSimpl' gn tag end freq time info =
       pure
         $ pannerMono_ (tag <> "_panOscSimpl") 0.0
             ( gainT_' (tag <> "_gainOscSimpl")
-                (AudioParameter { param: param + (0.005 * sin (0.1 * pi * time)), timeOffset })
+                ( defaultParam
+                    { param = param + (0.005 * sin (0.1 * pi * time))
+                    , timeOffset = timeOffset
+                    }
+                )
                 (sinOsc_ (tag <> "_sinOscSimpl") freq)
             )
   else
@@ -883,10 +887,10 @@ fadeIn os tg =
 ---- A
 type PlayerAOpts
   = { tag :: String
-    , pan :: Number -> AudioParameter Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , pan :: Number -> AudioParameter
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerA :: Int -> (Number -> PlayerAOpts) -> MusicalEvent
@@ -1001,10 +1005,10 @@ aDots os tg =
 type PlayerSenOpts
   = { tag :: String
     , offset :: Number
-    , pan :: Number -> AudioParameter Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , pan :: Number -> AudioParameter
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerSen :: Int -> (Number -> PlayerSenOpts) -> MusicalEvent
@@ -1152,9 +1156,9 @@ senArr os =
 type PlayerTiOpts
   = { tag :: String
     , pan :: Number -> Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerTi :: Int -> (Number -> PlayerTiOpts) -> MusicalEvent
@@ -1214,10 +1218,10 @@ tiDots os tg =
 type PlayerMenOpts
   = { tag :: String
     , offset :: Number
-    , pan :: Number -> AudioParameter Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , pan :: Number -> AudioParameter
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerMen :: Int -> (Number -> PlayerMenOpts) -> MusicalEvent
@@ -1328,9 +1332,9 @@ type PlayerTalOpts
   = { tag :: String
     , offset :: Number
     , pan :: Number -> Number
-    , gain :: Number -> AudioParameter Number
-    , hpff :: Number -> AudioParameter Number
-    , hpfq :: Number -> AudioParameter Number
+    , gain :: Number -> AudioParameter
+    , hpff :: Number -> AudioParameter
+    , hpfq :: Number -> AudioParameter
     }
 
 playerTal :: Int -> (Number -> PlayerTalOpts) -> MusicalEvent
@@ -1356,7 +1360,7 @@ playerTal name' opts' time info =
   name = "Tal-G5-" <> show name' <> "-l"
 
 data TalInfo
-  = TalInfo Int Number Number (Number -> AudioParameter Number)
+  = TalInfo Int Number Number (Number -> AudioParameter)
 
 peak :: Number -> Array (Tuple Number Number)
 peak n = [ Tuple n 0.2, Tuple (n + 0.12) 1.0, Tuple (n + 0.23) 1.0, Tuple (n + 0.34) 0.2 ]
@@ -1394,9 +1398,9 @@ type PlayerMoodOpts
     , offset :: Number
     , pan :: Number -> Number
     , filt :: FiltSig
-    , gain :: Number -> AudioParameter Number
-    , bpff :: Number -> AudioParameter Number
-    , bpfq :: Number -> AudioParameter Number
+    , gain :: Number -> AudioParameter
+    , bpff :: Number -> AudioParameter
+    , bpfq :: Number -> AudioParameter
     }
 
 playerMood :: String -> Int -> (Number -> PlayerMoodOpts) -> MusicalEvent
@@ -1422,10 +1426,10 @@ playerMood pitch name' opts' time info =
   name = "Mood-" <> pitch <> "-" <> show name' <> "-l"
 
 data MoodInfo
-  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) Number
+  = MoodInfo String String Int Number Number FiltSig Number (Number -> Number -> AudioParameter) Number
 
 type FiltSig
-  = forall ch. Pos ch => String -> AudioParameter Number -> AudioParameter Number -> AudioUnit ch -> AudioUnit ch
+  = forall ch. Pos ch => String -> AudioParameter -> AudioParameter -> AudioUnit ch -> AudioUnit ch
 
 bypassFilt :: FiltSig
 bypassFilt _ _ _ i = i
@@ -1543,7 +1547,7 @@ reverbVoice tag au = convolver_ tag "Impulses-matrix-reverb3" au
 
 ---------------------------
 ----- Middle
-endGainFunction :: Number -> Number -> AudioParameter Number
+endGainFunction :: Number -> Number -> AudioParameter
 endGainFunction gl time = ((epwf [ Tuple 0.0 gl, Tuple 30.0 gl, Tuple 38.0 (gl / 2.0), Tuple 53.0 0.0 ]) time)
 
 playerWindChimes :: MusicalEvent

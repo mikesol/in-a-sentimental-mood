@@ -16,7 +16,7 @@ import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, allpassT_, bandpass, bandpassT, bandpassT_, decodeAudioDataFromUri, gain', gainT', gainT_', gain_', highpass, highpassT_, pannerMono, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, allpassT_, bandpass, bandpassT, bandpassT_, decodeAudioDataFromUri, defaultParam, gain', gainT', gainT_', gain_', highpass, highpassT_, pannerMono, pannerMonoT_, pannerMono_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, speaker, speaker')
 import Foreign.Object as O
 import Math (pi, pow, sin)
 import Type.Klank.Dev (Buffers, Klank, affable, defaultEngineInfo, klank, makeBuffersKeepingCache)
@@ -92,7 +92,7 @@ soundsMood =
 
 kr = (toNumber defaultEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
-epwf :: Array (Tuple Number Number) -> Number -> AudioParameter Number
+epwf :: Array (Tuple Number Number) -> Number -> AudioParameter
 epwf p s =
   let
     ht = span ((s >= _) <<< fst) p
@@ -105,9 +105,9 @@ epwf p s =
         $ head ht.rest
   in
     if (fst right - s) < kr then
-      AudioParameter
-        { param: (snd right)
-        , timeOffset: (fst right - s)
+      defaultParam
+        { param = (snd right)
+        , timeOffset = (fst right - s)
         }
     else
       let
@@ -115,7 +115,7 @@ epwf p s =
 
         b = (snd right - (m * fst right))
       in
-        AudioParameter { param: (m * s + b), timeOffset: 0.0 }
+        defaultParam { param = (m * s + b), timeOffset = 0.0 }
 
 fromCloud :: String -> String
 fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
@@ -153,9 +153,9 @@ type PlayerMoodOpts
     , offset :: Number
     , pan :: Number -> Number
     , filt :: FiltSig
-    , gain :: Number -> AudioParameter Number
-    , bpff :: Number -> AudioParameter Number
-    , bpfq :: Number -> AudioParameter Number
+    , gain :: Number -> AudioParameter
+    , bpff :: Number -> AudioParameter
+    , bpfq :: Number -> AudioParameter
     }
 
 atT :: forall a. Number -> (Number -> a) -> (Number -> a)
@@ -184,13 +184,13 @@ playerMood pitch name' opts' time =
   name = "Mood-" <> pitch <> "-" <> show name' <> "-l"
 
 data MoodInfo
-  = MoodInfo String Int Number Number FiltSig Number (Number -> Number -> AudioParameter Number) MoodPan
+  = MoodInfo String Int Number Number FiltSig Number (Number -> Number -> AudioParameter) MoodPan
 
 data MoodPan
   = MoodPan Number Number Number
 
 type FiltSig
-  = forall ch. Pos ch => String -> AudioParameter Number -> AudioParameter Number -> AudioUnit ch -> AudioUnit ch
+  = forall ch. Pos ch => String -> AudioParameter -> AudioParameter -> AudioUnit ch -> AudioUnit ch
 
 lowOs = 1.3 :: Number
 

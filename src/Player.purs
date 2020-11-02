@@ -1,4 +1,4 @@
-module Klank.Dev where
+module Klank.Player where
 
 -- New to PureScript? Check out https://www.purescript.org/ for learning resources!
 -- To learn more about FRP and the behavior pattern, make sure to check out:

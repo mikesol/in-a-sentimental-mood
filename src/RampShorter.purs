@@ -19,7 +19,7 @@ import Data.Tuple (Tuple(..), fst, snd)
 import Data.Typelevel.Num (class Pos, D1, D2)
 import Debug.Trace (spy)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AudioParameter(..), AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, dynamicsCompressor_, gain', gainT', gainT_, gainT_', gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
+import FRP.Behavior.Audio (AudioParameter, AudioUnit, EngineInfo, allpassT_, bandpassT_, decodeAudioDataFromUri, defaultParam, dynamicsCompressor_, gain', gainT', gainT_, gainT_', gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBuf, playBufT_, playBufWithOffset_, playBuf_, runInBrowser, sinOsc, sinOsc_, speaker, speaker')
 import Foreign.Object as O
 import Math (cos, pi, pow, sin, abs)
 import Test.QuickCheck.Gen (sample)
@@ -485,7 +485,7 @@ soundsMoodMap = M.fromFoldable (map (\(MoodIdx (Tuple x y) b) -> Tuple (x <> "-"
 
 kr = (toNumber iasmEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
-epwf :: Array (Tuple Number Number) -> Number -> AudioParameter Number
+epwf :: Array (Tuple Number Number) -> Number -> AudioParameter
 epwf p s =
   let
     ht = span ((s >= _) <<< fst) p
@@ -498,9 +498,9 @@ epwf p s =
         $ head ht.rest
   in
     if (fst right - s) < kr then
-      AudioParameter
-        { param: (snd right)
-        , timeOffset: (fst right - s)
+      defaultParam
+        { param = (snd right)
+        , timeOffset = (fst right - s)
         }
     else
       let
@@ -508,7 +508,7 @@ epwf p s =
 
         b = (snd right - (m * fst right))
       in
-        AudioParameter { param: (m * s + b), timeOffset: 0.0 }
+        defaultParam { param = (m * s + b), timeOffset = 0.0 }
 
 fromCloud :: String -> String
 fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
