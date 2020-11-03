@@ -19,11 +19,11 @@ import Prelude
 import Color (rgb)
 import Control.Parallel (parallel, sequential)
 import Control.Promise (toAffE)
-import Data.Array (filter, foldl, mapWithIndex, fold, head, last, range, span)
+import Data.Array (filter, fold, foldl, mapWithIndex, range)
 import Data.Either (either)
 import Data.Int (toNumber)
 import Data.Lazy (Lazy, defer, force)
-import Data.Lens (_1, _2, over, traversed)
+import Data.Lens (_2, over, traversed)
 import Data.List ((:), List(..))
 import Data.Map as M
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
@@ -32,13 +32,13 @@ import Data.Profunctor (lcmap)
 import Data.Set (isEmpty)
 import Data.String (Pattern(..), Replacement(..), replace)
 import Data.Traversable (sequence)
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (Tuple(..), fst)
 import Data.Typelevel.Num (class Pos, D2)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay, try)
 import Effect.Exception (Error)
 import FRP.Behavior (Behavior)
-import FRP.Behavior.Audio (AV(..), AudioContext, AudioParameter(..), AudioUnit, BrowserAudioBuffer, CanvasInfo(..), EngineInfo, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, defaultParam, dynamicsCompressor_, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
+import FRP.Behavior.Audio (AV(..), AudioContext, AudioUnit, BrowserAudioBuffer, CanvasInfo(..), EngineInfo, AudioParameter, bandpassT_, convolver_, decodeAudioDataFromUri, defaultExporter, defaultParam, dynamicsCompressor_, evalPiecewise, gainT_', gain_, gain_', highpassT_, highpass_, pannerMonoT_, pannerMono_, pannerT_, panner_, playBufT_, playBufWithOffset_, playBuf_, runInBrowser_, sinOsc_, speaker)
 import FRP.Behavior.Mouse (buttons, position)
 import FRP.Event.Mouse (Mouse, getMouse)
 import Foreign.Object as O
@@ -725,29 +725,7 @@ boundPlayer len time a = if (time) + kr >= 0.0 && time < (len) then force a else
 kr = (toNumber iasmEngineInfo.msBetweenSamples) / 1000.0 :: Number
 
 epwf :: Array (Tuple Number Number) -> Number -> AudioParameter
-epwf p s =
-  let
-    ht = span ((s >= _) <<< fst) p
-
-    left = fromMaybe (Tuple 0.0 0.0) $ last ht.init
-
-    right =
-      fromMaybe
-        (maybe (Tuple 10000.0 0.0) (over _1 (_ + 1.0)) $ last p)
-        $ head ht.rest
-  in
-    if (fst right - s) < kr then
-      defaultParam
-        { param = (snd right)
-        , timeOffset = (fst right - s)
-        }
-    else
-      let
-        m = (snd right - snd left) / (fst right - fst left)
-
-        b = (snd right - (m * fst right))
-      in
-        defaultParam { param = (m * s + b), timeOffset = 0.0 }
+epwf = evalPiecewise kr
 
 fromCloud :: String -> String
 fromCloud s = "https://klank-share.s3-eu-west-1.amazonaws.com/in-a-sentimental-mood/Samples/" <> s
