@@ -671,7 +671,7 @@ main =
         width <- innerWidth w
         height <- innerHeight w
         pure (scene (toNumber width) (toNumber height) mouse)
-    , engineInfo = iasmEngineInfo
+    , engineInfo = \res _ -> res iasmEngineInfo
     , exporter = defaultExporter
     }
 
